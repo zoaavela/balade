@@ -32,6 +32,12 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "L’app utilise ta position pour tracer tes balades et débloquer les lieux où tu passes. Elle reste sur ton téléphone."
+        }
       ]
     ],
     "experiments": {
