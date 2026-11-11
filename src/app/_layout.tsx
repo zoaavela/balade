@@ -13,6 +13,8 @@ import { useEffect } from 'react';
 
 import { Accueil } from '@/accueil/Accueil';
 import { useAccueilVu } from '@/accueil/accueilVu';
+import { EcranConnexion } from '@/compte/EcranConnexion';
+import { useSession } from '@/compte/useSession';
 import { ouvrirBase } from '@/db/base';
 import { DeblocageProvider } from '@/deblocage/Deblocage';
 import { couleurs, polices, trait } from '@/theme';
@@ -36,19 +38,32 @@ export default function RootLayout() {
   });
 
   const accueilVu = useAccueilVu();
+  const { session, chargee } = useSession();
+  const pret = policesPretes && chargee;
 
   useEffect(() => {
-    if (policesPretes) SplashScreen.hideAsync();
-  }, [policesPretes]);
+    if (pret) SplashScreen.hideAsync();
+  }, [pret]);
 
-  if (!policesPretes) return null;
+  // L'écran de démarrage reste affiché le temps de charger la police et la session.
+  if (!pret) return null;
 
-  // Premier lancement : l'accueil passe avant tout le reste.
+  // Premier lancement : l'accueil passe avant tout le reste, connexion comprise.
   if (!accueilVu) {
     return (
       <>
         <StatusBar style="dark" />
-        <Accueil />
+        <Accueil connecte={session !== null} />
+      </>
+    );
+  }
+
+  // Le compte est obligatoire : sans session, pas d'accès à l'app.
+  if (!session) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <EcranConnexion />
       </>
     );
   }

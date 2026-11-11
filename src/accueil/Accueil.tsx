@@ -1,11 +1,12 @@
 import * as Location from 'expo-location';
-import { useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Carte } from '@/cartes/Carte';
 import { lieux } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
+import { FormulaireConnexion } from '@/compte/FormulaireConnexion';
 import { couleurs, espace, polices } from '@/theme';
 
 import { marquerAccueilVu } from './accueilVu';
@@ -16,7 +17,7 @@ type Etape = {
   visuel?: ReactNode;
 };
 
-const etapes: Etape[] = [
+const explications: Etape[] = [
   {
     titre: 'Tes trajets deviennent une collection',
     texte:
@@ -29,52 +30,101 @@ const etapes: Etape[] = [
       "Aucun bouton à toucher : dès que l'app est ouverte, elle note ta position toute seule, à peu près tous les 15 mètres. Pour l'instant, elle doit rester ouverte pour enregistrer.",
   },
   {
-    titre: 'Tes positions restent chez toi',
+    titre: 'Tes positions restent à toi',
     texte:
-      "Elles sont rangées sur ton téléphone, dans l'app, et ne sont envoyées nulle part. Il faut seulement ton accord pour lire ta position pendant que tu utilises l'app.",
+      "Elles sont rangées sur ton téléphone et sauvegardées sur ton compte, pour les retrouver si tu changes de téléphone. Toi seul peux les voir. Les autres ne verront jamais ton tracé.",
   },
 ];
 
-// Accueil du tout premier lancement : trois écrans, puis la demande de localisation.
-// Un refus mène quand même à l'app : l'onglet Carte affiche alors l'écran qui explique
-// comment activer la localisation dans les réglages.
-export function Accueil() {
+// Écrans du premier lancement : trois explications, la connexion, puis la localisation.
+// Si on est déjà connecté (accueil revu, ou app fermée en cours de route),
+// l'étape de connexion est sautée.
+export function Accueil({ connecte }: { connecte: boolean }) {
   const [index, setIndex] = useState(0);
   const marges = useSafeAreaInsets();
-  const etape = etapes[index];
-  const derniere = index === etapes.length - 1;
+  const nbEtapes = explications.length + 2; // + connexion + localisation
+  const surConnexion = index === explications.length;
+  const surLocalisation = index === explications.length + 1;
+
+  // Dès que la connexion réussit, on passe à la localisation.
+  useEffect(() => {
+    if (connecte && surConnexion) setIndex(explications.length + 1);
+  }, [connecte, surConnexion]);
+
+  function continuer() {
+    const suivant = index + 1;
+    // Déjà connecté : pas besoin de l'écran de connexion.
+    setIndex(suivant === explications.length && connecte ? suivant + 1 : suivant);
+  }
 
   async function autoriser() {
     try {
       await Location.requestForegroundPermissionsAsync();
     } finally {
+      // Accepté ou refusé, l'app s'ouvre. En cas de refus, l'onglet Carte explique
+      // comment activer la localisation dans les réglages.
       marquerAccueilVu(true);
     }
   }
 
-  return (
-    <View
-      style={[
-        styles.ecran,
-        { paddingTop: marges.top + espace.xl, paddingBottom: marges.bottom + espace.l },
-      ]}>
-      <View style={styles.contenu}>
+  let contenu: ReactNode;
+  if (surConnexion) {
+    contenu = (
+      <>
+        <Text style={styles.titre}>Ton compte</Text>
+        <Text style={styles.texte}>
+          Indique ton adresse e-mail, tu reçois un code pour entrer. La première fois, ça crée ton
+          compte.
+        </Text>
+        <FormulaireConnexion />
+      </>
+    );
+  } else if (surLocalisation) {
+    contenu = (
+      <>
+        <Text style={styles.titre}>Où es-tu ?</Text>
+        <Text style={styles.texte}>
+          Dernière étape : l'app a besoin de ta position pendant que tu l'utilises, pour enregistrer
+          tes trajets et débloquer les lieux où tu passes.
+        </Text>
+      </>
+    );
+  } else {
+    const etape = explications[index];
+    contenu = (
+      <>
         {etape.visuel && <View style={styles.visuel}>{etape.visuel}</View>}
         <Text style={styles.titre}>{etape.titre}</Text>
         <Text style={styles.texte}>{etape.texte}</Text>
-      </View>
+      </>
+    );
+  }
 
-      <View style={styles.points}>
-        {etapes.map((_, i) => (
-          <View key={i} style={[styles.point, i === index && styles.pointActif]} />
-        ))}
-      </View>
+  return (
+    <KeyboardAvoidingView behavior="padding" style={styles.ecran}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          styles.page,
+          { paddingTop: marges.top + espace.xl, paddingBottom: marges.bottom + espace.l },
+        ]}>
+        <View style={styles.contenu}>{contenu}</View>
 
-      <Bouton
-        titre={derniere ? 'Autoriser la localisation' : 'Continuer'}
-        onPress={derniere ? autoriser : () => setIndex(index + 1)}
-      />
-    </View>
+        <View style={styles.points}>
+          {Array.from({ length: nbEtapes }, (_, i) => (
+            <View key={i} style={[styles.point, i === index && styles.pointActif]} />
+          ))}
+        </View>
+
+        {/* Sur l'écran de connexion, c'est le formulaire qui fait avancer. */}
+        {!surConnexion && (
+          <Bouton
+            titre={surLocalisation ? 'Autoriser la localisation' : 'Continuer'}
+            onPress={surLocalisation ? autoriser : continuer}
+          />
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -82,6 +132,9 @@ const styles = StyleSheet.create({
   ecran: {
     flex: 1,
     backgroundColor: couleurs.fond,
+  },
+  page: {
+    flexGrow: 1,
     paddingHorizontal: espace.l,
     gap: espace.l,
   },

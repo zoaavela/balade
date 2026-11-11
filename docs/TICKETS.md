@@ -18,7 +18,7 @@ Les numéros restent fixes, mais l'ordre à suivre est celui de cette liste : le
 - [x] T04 Album
 - [x] T05 Lieux sur la carte
 - [x] T12 Comptes Supabase
-- [ ] T06 Écran d'accueil, connexion et consentement
+- [x] T06 Écran d'accueil, connexion et consentement
 - [ ] T13 Synchronisation
 - [x] T07 Trajets du jour
 - [ ] T08 Build de développement
