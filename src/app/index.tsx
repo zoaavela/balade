@@ -43,8 +43,8 @@ const ZOOM = 0.012; // environ 1 km de large
 export default function Carte() {
   const [etat, setEtat] = useState<Etat>({ type: 'verification' });
   const carteAffichee = useRef(false);
-  const { debloquees, traiterPoint } = useDeblocage();
-  const points = useSuiviPosition(etat.type === 'pret', traiterPoint);
+  const { debloquees } = useDeblocage();
+  const points = useSuiviPosition(etat.type === 'pret');
   const [menuSimulation, setMenuSimulation] = useState(false);
   const [choisi, setChoisi] = useState<Lieu | null>(null);
   const [maPosition, setMaPosition] = useState<Point | null>(null);

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "collection-idf",
+    "name": "Balade",
     "slug": "collection-idf",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -34,14 +34,29 @@
           "imageWidth": 76
         }
       ],
+      "expo-sqlite",
+      "expo-dev-client",
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "L’app utilise ta position pour enregistrer tes trajets et débloquer les lieux où tu passes. Elle reste sur ton téléphone."
+          "locationWhenInUsePermission": "L’app utilise ta position pour enregistrer tes trajets et débloquer les lieux où tu passes. Elle est sauvegardée sur ton compte, toi seul peux la voir.",
+          "locationAlwaysAndWhenInUsePermission": "Choisis « Toujours » pour que l’app enregistre tes trajets et débloque les lieux même téléphone en poche. Le GPS précis ne s’allume que quand tu marches.",
+          "locationAlwaysPermission": "Choisis « Toujours » pour que l’app enregistre tes trajets et débloque les lieux même téléphone en poche.",
+          "isIosBackgroundLocationEnabled": true
         }
       ],
-      "expo-sqlite",
-      "expo-dev-client"
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "L’app compte tes pas avec le capteur du téléphone, pour les afficher dans ton profil."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

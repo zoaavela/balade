@@ -9,6 +9,9 @@ import { Bouton } from '@/components/bouton';
 import { FormulaireConnexion } from '@/compte/FormulaireConnexion';
 import { couleurs, espace, polices } from '@/theme';
 
+import { dansExpoGo } from '@/suivi/environnement';
+import { demanderNotifications } from '@/suivi/notifications';
+
 import { marquerAccueilVu } from './accueilVu';
 
 type Etape = {
@@ -26,8 +29,9 @@ const explications: Etape[] = [
   },
   {
     titre: 'Le suivi est automatique',
-    texte:
-      "Aucun bouton à toucher : dès que l'app est ouverte, elle note ta position toute seule, à peu près tous les 15 mètres. Pour l'instant, elle doit rester ouverte pour enregistrer.",
+    texte: dansExpoGo
+      ? "Aucun bouton à toucher : dès que l'app est ouverte, elle note ta position toute seule, à peu près tous les 15 mètres. Pour l'instant, elle doit rester ouverte pour enregistrer."
+      : "Aucun bouton à toucher : l'app note ta position toute seule, même téléphone en poche. Pour économiser la batterie, le GPS précis ne s'allume que quand tu marches.",
   },
   {
     titre: 'Tes positions restent à toi',
@@ -59,7 +63,12 @@ export function Accueil({ connecte }: { connecte: boolean }) {
 
   async function autoriser() {
     try {
-      await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      // Dans la build, on demande ensuite « Toujours » pour suivre téléphone en poche.
+      if (status === 'granted' && !dansExpoGo) {
+        await Location.requestBackgroundPermissionsAsync();
+        await demanderNotifications();
+      }
     } finally {
       // Accepté ou refusé, l'app s'ouvre. En cas de refus, l'onglet Carte explique
       // comment activer la localisation dans les réglages.
@@ -84,8 +93,9 @@ export function Accueil({ connecte }: { connecte: boolean }) {
       <>
         <Text style={styles.titre}>Où es-tu ?</Text>
         <Text style={styles.texte}>
-          Dernière étape : l'app a besoin de ta position pendant que tu l'utilises, pour enregistrer
-          tes trajets et débloquer les lieux où tu passes.
+          {dansExpoGo
+            ? "Dernière étape : l'app a besoin de ta position pendant que tu l'utilises, pour enregistrer tes trajets et débloquer les lieux où tu passes."
+            : "Dernière étape : l'app a besoin de ta position, puis de ton accord pour la lire « Toujours », afin d'enregistrer tes trajets même téléphone en poche. Elle te demandera aussi de t'envoyer une notification quand tu débloques une carte."}
         </Text>
       </>
     );

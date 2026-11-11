@@ -1,4 +1,4 @@
-# collection-idf
+# Balade
 
 App iPhone perso qui transforme les déplacements en Île-de-France en collection. Voir CLAUDE.md.
 

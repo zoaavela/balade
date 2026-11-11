@@ -48,6 +48,11 @@ export function utiliserCompte(id: string) {
       envoyee INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS pas_jours (
+      jour TEXT PRIMARY KEY, -- AAAA-MM-JJ, heure locale
+      pas INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS etat (
       cle TEXT PRIMARY KEY,
       valeur TEXT NOT NULL

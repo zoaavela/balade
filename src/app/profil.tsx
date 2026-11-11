@@ -10,6 +10,7 @@ import { Ecran } from '@/components/ecran';
 import { Compte } from '@/compte/Compte';
 import { tousLesPoints } from '@/db/points';
 import { useDeblocage } from '@/deblocage/Deblocage';
+import { formaterPas, lirePas, type Pas } from '@/pas/pas';
 import { distanceTotale } from '@/profil/statistiques';
 import { couleurs, espace, polices, trait } from '@/theme';
 
@@ -26,12 +27,15 @@ export default function Profil() {
   const { width } = useWindowDimensions();
   const { debloquees } = useDeblocage();
   const [metres, setMetres] = useState(0);
+  // undefined : pas encore lu ; null : capteur indisponible ou refusé.
+  const [pas, setPas] = useState<Pas | null | undefined>(undefined);
   const [enGrand, setEnGrand] = useState<Lieu | null>(null);
 
   // Recalculé à chaque ouverture de l'onglet, pour suivre les nouveaux points.
   useFocusEffect(
     useCallback(() => {
       setMetres(distanceTotale(tousLesPoints()));
+      lirePas().then(setPas);
     }, []),
   );
 
@@ -54,9 +58,22 @@ export default function Profil() {
           <Chiffre valeur={formaterDistance(metres)} legende="Parcourus" />
         </View>
         <View style={styles.rangee}>
-          <Chiffre valeur="Bientôt" legende="Pas aujourd'hui" attente />
-          <Chiffre valeur="Bientôt" legende="Pas au total" attente />
+          <Chiffre
+            valeur={pas ? formaterPas(pas.aujourdhui) : pas === null ? 'Indisponible' : '…'}
+            legende="Pas aujourd'hui"
+            attente={!pas}
+          />
+          <Chiffre
+            valeur={pas ? formaterPas(pas.total) : pas === null ? 'Indisponible' : '…'}
+            legende="Pas au total"
+            attente={!pas}
+          />
         </View>
+        {pas === null && (
+          <Text style={styles.vide}>
+            Pour compter tes pas, autorise « Mouvements et forme » dans les réglages de l'app.
+          </Text>
+        )}
 
         <Text style={styles.sousTitre}>Dernières cartes</Text>
         {dernieres.length === 0 ? (

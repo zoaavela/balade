@@ -1,47 +1,57 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import type { Point } from '@/balade/mesures';
 import type { Lieu } from '@/cartes/lieux';
-import { cartesDebloquees, debloquer } from '@/db/cartes';
+import { cartesDebloquees } from '@/db/cartes';
+import { enregistrerDeblocages } from '@/suivi/enregistrer';
+import { dansExpoGo } from '@/suivi/environnement';
+import { surNouvellesCartes } from '@/suivi/evenements';
+import { surveillerLieux } from '@/suivi/zones';
 
 import { lieuxAtteints } from './lieuxAtteints';
 import { NouvelleCarte } from './NouvelleCarte';
 
 type Valeur = {
   debloquees: Map<string, Date>; // lieu_id et date de déblocage
-  traiterPoint: (point: Point) => void; // à appeler pour chaque nouvelle position
+  traiterPoint: (point: Point) => void; // position simulée (menu de développement)
   rafraichir: () => void; // relit les cartes depuis la base (après une synchronisation)
 };
 
 const Contexte = createContext<Valeur | null>(null);
 
 // Le gestionnaire de déblocage, branché une fois pour toute l'app.
-// Il reçoit les positions, enregistre les nouvelles cartes et les montre une par une.
+// Le suivi (suivi/enregistrer.ts) écrit les déblocages et les annonce ; ici on les montre
+// un par un et on tient à jour la liste des cartes pour les écrans.
 export function DeblocageProvider({ children }: { children: ReactNode }) {
   const [debloquees, setDebloquees] = useState(() => cartesDebloquees());
   const [aMontrer, setAMontrer] = useState<{ lieu: Lieu; date: Date }[]>([]);
-  // Copie à jour des ids débloqués, lue à chaque point sans attendre un nouvel affichage.
-  const ids = useRef<Set<string> | null>(null);
+
+  useEffect(
+    () =>
+      surNouvellesCartes(({ lieux, date }) => {
+        setDebloquees(cartesDebloquees());
+        setAMontrer((file) => [...file, ...lieux.map((lieu) => ({ lieu, date }))]);
+      }),
+    [],
+  );
+
+  // iOS surveille les lieux restants, pour débloquer même app fermée (build seulement).
+  useEffect(() => {
+    if (!dansExpoGo) surveillerLieux(new Set(debloquees.keys()));
+  }, [debloquees]);
 
   const traiterPoint = useCallback((point: Point) => {
-    if (!ids.current) ids.current = new Set(cartesDebloquees().keys());
-    const atteints = lieuxAtteints(point, ids.current);
-    if (atteints.length === 0) return;
-
-    const date = new Date();
-    const nouveaux = atteints.filter((lieu) => debloquer(lieu.id, date));
-    nouveaux.forEach((lieu) => ids.current?.add(lieu.id));
-    if (nouveaux.length === 0) return;
-
-    setDebloquees(cartesDebloquees());
-    setAMontrer((file) => [...file, ...nouveaux.map((lieu) => ({ lieu, date }))]);
+    enregistrerDeblocages(lieuxAtteints(point, new Set(cartesDebloquees().keys())));
   }, []);
 
-  const rafraichir = useCallback(() => {
-    const cartes = cartesDebloquees();
-    ids.current = new Set(cartes.keys());
-    setDebloquees(cartes);
-  }, []);
+  const rafraichir = useCallback(() => setDebloquees(cartesDebloquees()), []);
 
   const enCours = aMontrer[0];
 

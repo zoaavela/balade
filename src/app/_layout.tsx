@@ -18,6 +18,9 @@ import { useSession } from '@/compte/useSession';
 import { ouvrirBase, utiliserCompte } from '@/db/base';
 import { InclinaisonProvider } from '@/cartes/inclinaison';
 import { DeblocageProvider } from '@/deblocage/Deblocage';
+import { oublierCompte, retenirCompte } from '@/suivi/enregistrer';
+import { arreterSuiviFond } from '@/suivi/tacheFond';
+import { arreterZones } from '@/suivi/zones';
 import { SynchroAuto } from '@/sync/SynchroAuto';
 import { couleurs, polices, trait } from '@/theme';
 
@@ -47,6 +50,15 @@ export default function RootLayout() {
     if (pret) SplashScreen.hideAsync();
   }, [pret]);
 
+  // Déconnecté : plus aucun suivi, et le suivi en arrière-plan oublie le compte.
+  const deconnecte = chargee && session === null;
+  useEffect(() => {
+    if (!deconnecte) return;
+    oublierCompte();
+    arreterSuiviFond();
+    arreterZones();
+  }, [deconnecte]);
+
   // L'écran de démarrage reste affiché le temps de charger la police et la session.
   if (!pret) return null;
 
@@ -74,6 +86,7 @@ export default function RootLayout() {
   // de tous les écrans quand on change de compte.
   const userId = session.user.id;
   utiliserCompte(userId);
+  retenirCompte(userId); // pour le suivi en arrière-plan
 
   return (
     <Fragment key={userId}>
