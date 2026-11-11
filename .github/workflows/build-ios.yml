@@ -1,0 +1,83 @@
+# Compile la build de développement iOS sur un Mac de GitHub, sans signature.
+# Le fichier .ipa obtenu est signé ensuite sur l'iPhone par SideStore.
+# Mode d'emploi complet : docs/BUILD.md
+
+name: Build iOS de développement
+
+on:
+  workflow_dispatch: # bouton « Run workflow » dans l'onglet Actions
+  push:
+    branches: [t08-build] # temporaire : permet de tester avant la fusion dans main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Générer le projet Xcode
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Installer les modules natifs (CocoaPods)
+        working-directory: ios
+        run: pod install
+
+      - name: Compiler sans signature
+        run: |
+          ESPACE=$(ls -d ios/*.xcworkspace | head -n 1)
+          SCHEMA=$(basename "$ESPACE" .xcworkspace)
+          echo "Projet : $ESPACE, schéma : $SCHEMA"
+          xcodebuild \
+            -workspace "$ESPACE" \
+            -scheme "$SCHEMA" \
+            -configuration Debug \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            > build.log 2>&1 || {
+              echo "La compilation a échoué. Erreurs trouvées :"
+              grep -E "error:|fatal error" build.log | head -n 60
+              echo "Fin du journal :"
+              tail -n 80 build.log
+              exit 1
+            }
+
+      - name: Fabriquer le fichier .ipa
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Debug-iphoneos/*.app Payload/
+          zip -qry balade-dev.ipa Payload
+          ls -lh balade-dev.ipa
+
+      - name: Mettre le .ipa à disposition
+        uses: actions/upload-artifact@v4
+        with:
+          name: balade-dev-ipa
+          path: balade-dev.ipa
+          retention-days: 14
+
+      - name: Garder le journal en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: journal-compilation
+          path: build.log
+          retention-days: 7

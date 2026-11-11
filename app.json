@@ -8,7 +8,8 @@
     "scheme": "collectionidf",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.zoaavela.balade"
     },
     "android": {
       "adaptiveIcon": {
@@ -39,7 +40,8 @@
           "locationWhenInUsePermission": "L’app utilise ta position pour enregistrer tes trajets et débloquer les lieux où tu passes. Elle reste sur ton téléphone."
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-dev-client"
     ],
     "experiments": {
       "typedRoutes": true,
