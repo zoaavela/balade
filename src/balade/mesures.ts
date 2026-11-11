@@ -11,3 +11,9 @@ export function distanceEntre(a: Point, b: Point): number {
     Math.cos(rad(a.latitude)) * Math.cos(rad(b.latitude)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+
+// 850 m, puis 2,4 km au-delà d'un kilomètre.
+export function formaterDistance(metres: number): string {
+  if (metres < 1000) return `${Math.round(metres)} m`;
+  return `${(metres / 1000).toFixed(1).replace('.', ',')} km`;
+}

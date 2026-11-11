@@ -12,7 +12,11 @@ import {
 } from 'react-native';
 import MapView, { Polyline, type Region } from 'react-native-maps';
 
-import { lieux } from '@/cartes/lieux';
+import { CarteEnGrand } from '@/album/CarteEnGrand';
+import { distanceEntre, formaterDistance, type Point } from '@/balade/mesures';
+import { MarqueurLieu } from '@/carte/MarqueurLieu';
+
+import { lieux, type Lieu } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
 import { Ecran } from '@/components/ecran';
 import { useDeblocage } from '@/deblocage/Deblocage';
@@ -33,9 +37,13 @@ const ZOOM = 0.012; // environ 1 km de large
 export default function Carte() {
   const [etat, setEtat] = useState<Etat>({ type: 'verification' });
   const carteAffichee = useRef(false);
-  const { traiterPoint } = useDeblocage();
+  const { debloquees, traiterPoint } = useDeblocage();
   const points = useSuiviPosition(etat.type === 'pret', traiterPoint);
   const [menuSimulation, setMenuSimulation] = useState(false);
+  const [choisi, setChoisi] = useState<Lieu | null>(null);
+  const [maPosition, setMaPosition] = useState<Point | null>(null);
+  // Sur iOS, toucher un marqueur peut aussi toucher la carte dessous : on ignore ce second tap.
+  const dernierTapMarqueur = useRef(0);
 
   const chercherPosition = useCallback(async () => {
     carteAffichee.current = false;
@@ -101,6 +109,13 @@ export default function Carte() {
             style={StyleSheet.absoluteFill}
             initialRegion={etat.region}
             showsUserLocation
+            onUserLocationChange={(e) => {
+              const c = e.nativeEvent.coordinate;
+              if (c) setMaPosition({ latitude: c.latitude, longitude: c.longitude });
+            }}
+            onPress={() => {
+              if (Date.now() - dernierTapMarqueur.current > 400) setChoisi(null);
+            }}
             showsPointsOfInterests={false}
             showsCompass={false}
             pitchEnabled={false}>
@@ -113,8 +128,42 @@ export default function Carte() {
                 lineJoin="round"
               />
             )}
+            {lieux.map((lieu) => (
+              <MarqueurLieu
+                key={lieu.id}
+                lieu={lieu}
+                debloque={debloquees.has(lieu.id)}
+                onPress={() => {
+                  dernierTapMarqueur.current = Date.now();
+                  setChoisi(lieu);
+                }}
+              />
+            ))}
           </MapView>
+
+          {choisi && !debloquees.has(choisi.id) && (
+            <View style={styles.infoLieu}>
+              <Text style={styles.infoNom} numberOfLines={2}>
+                {choisi.nom}
+              </Text>
+              <Text style={styles.infoDistance}>
+                {(() => {
+                  // Ta position sur la carte, sinon ton dernier point, sinon le centre de départ.
+                  const depuis = maPosition ?? points.at(-1) ?? etat.region;
+                  return `À ${formaterDistance(distanceEntre(depuis, choisi))}`;
+                })()}
+              </Text>
+            </View>
+          )}
         </View>
+      )}
+
+      {choisi && debloquees.has(choisi.id) && (
+        <CarteEnGrand
+          lieu={choisi}
+          debloqueLe={debloquees.get(choisi.id)}
+          onFermer={() => setChoisi(null)}
+        />
       )}
 
       {(etat.type === 'verification' || etat.type === 'recherche') && (
@@ -227,6 +276,28 @@ const styles = StyleSheet.create({
   },
   espaceBouton: {
     marginTop: espace.s,
+  },
+  infoLieu: {
+    position: 'absolute',
+    left: espace.m,
+    right: espace.m,
+    bottom: espace.m,
+    padding: espace.m,
+    gap: espace.xs,
+    backgroundColor: couleurs.fond,
+    borderColor: couleurs.encre,
+    borderWidth: trait,
+    borderRadius: 14,
+  },
+  infoNom: {
+    fontFamily: polices.extraGras,
+    fontSize: 22,
+    color: couleurs.encre,
+  },
+  infoDistance: {
+    fontFamily: polices.moyen,
+    fontSize: 16,
+    color: couleurs.encreDouce,
   },
   menu: {
     flex: 1,
