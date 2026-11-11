@@ -19,7 +19,7 @@ export function CarteEnGrand({ lieu, debloqueLe, onFermer }: Props) {
   return (
     <Modal transparent animationType="fade" statusBarTranslucent onRequestClose={onFermer}>
       <View style={styles.fond}>
-        <Carte lieu={lieu} taille={taille} debloqueLe={debloqueLe} />
+        <Carte lieu={lieu} taille={taille} debloqueLe={debloqueLe} pivote />
         <Text style={styles.aide}>Touche la carte pour la retourner.</Text>
         <View style={styles.bouton}>
           <Bouton titre="Fermer" onPress={onFermer} variante="clair" />

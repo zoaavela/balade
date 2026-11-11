@@ -16,6 +16,7 @@ import { useAccueilVu } from '@/accueil/accueilVu';
 import { EcranConnexion } from '@/compte/EcranConnexion';
 import { useSession } from '@/compte/useSession';
 import { ouvrirBase, utiliserCompte } from '@/db/base';
+import { InclinaisonProvider } from '@/cartes/inclinaison';
 import { DeblocageProvider } from '@/deblocage/Deblocage';
 import { SynchroAuto } from '@/sync/SynchroAuto';
 import { couleurs, polices, trait } from '@/theme';
@@ -76,7 +77,8 @@ export default function RootLayout() {
 
   return (
     <Fragment key={userId}>
-      <DeblocageProvider>
+      <InclinaisonProvider>
+        <DeblocageProvider>
       <SynchroAuto userId={userId} />
       <StatusBar style="dark" />
       <Tabs
@@ -97,7 +99,8 @@ export default function RootLayout() {
         <Tabs.Screen name="defis" options={{ title: 'Défis', tabBarIcon: icone('flag') }} />
         <Tabs.Screen name="profil" options={{ title: 'Profil', tabBarIcon: icone('person') }} />
       </Tabs>
-      </DeblocageProvider>
+        </DeblocageProvider>
+      </InclinaisonProvider>
     </Fragment>
   );
 }

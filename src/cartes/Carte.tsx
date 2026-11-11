@@ -1,12 +1,21 @@
 import { Image } from 'expo-image';
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
 
 import { couleurs, melanger, polices, trait } from '@/theme';
 
 import { categories, type Categorie } from './categories';
 import { illustrationDe } from './illustrations';
+import { useInclinaison } from './inclinaison';
 import { numeroDe, type Lieu } from './lieux';
 
 type Props = {
@@ -16,9 +25,15 @@ type Props = {
   revelation?: boolean; // démarre face cachée (dos uni) puis se retourne toute seule
   onRevele?: () => void; // appelé au moment où la carte commence à se retourner
   onPress?: () => void; // si fourni, un tap appelle ceci au lieu de retourner la carte
+  pivote?: boolean; // la carte entière penche un peu avec le téléphone (cartes en grand seulement)
 };
 
+const PIVOT_MAX = 14; // degrés au plus, atteints vers 15 degrés d'inclinaison du téléphone
+const PIVOT_GAIN = 2.5; // amplifie les petits gestes pour que la carte réagisse vite
+
 const DELAI_REVELATION = 700; // millisecondes avant le retournement
+const DUREE_RETOURNEMENT = 520; // millisecondes
+const SOULEVEMENT = 0.06; // la carte grossit un peu à mi-course, comme soulevée de la table
 
 const COUCHES_TRANCHE = 4; // épaisseur du carton, 1 point par couche
 
@@ -29,26 +44,33 @@ export function Carte({
   revelation = false,
   onRevele,
   onPress,
+  pivote = false,
 }: Props) {
-  // 0 : face visible, 1 : dos visible.
-  const [rotation] = useState(() => new Animated.Value(revelation ? 1 : 0));
+  const inclinaison = useInclinaison();
+  // 0 : face visible, 1 : dos visible. Animé du côté de l'affichage, sans à-coups.
+  const rotation = useSharedValue(revelation ? 1 : 0);
   const [auDos, setAuDos] = useState(revelation);
   // Pendant la révélation, le dos montré est le dos uni. Une fois la carte retournée,
   // il redevient le dos normal (nom, anecdote, tampon).
   const [cachee, setCachee] = useState(revelation);
   const categorie = categories[lieu.categorie];
 
+  function animerVers(cible: 0 | 1, ensuite?: () => void) {
+    rotation.value = withTiming(
+      cible,
+      { duration: DUREE_RETOURNEMENT, easing: Easing.inOut(Easing.cubic) },
+      (fini) => {
+        if (fini && ensuite) runOnJS(ensuite)();
+      },
+    );
+  }
+
   useEffect(() => {
     if (!revelation) return;
     const minuteur = setTimeout(() => {
       onRevele?.();
       setAuDos(false);
-      Animated.spring(rotation, {
-        toValue: 0,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }).start(() => setCachee(false));
+      animerVers(0, () => setCachee(false));
     }, DELAI_REVELATION);
     return () => clearTimeout(minuteur);
     // Ne se joue qu'une fois, à l'apparition de la carte.
@@ -57,17 +79,39 @@ export function Carte({
 
   function retourner() {
     if (cachee) return; // on laisse la révélation se finir
-    Animated.spring(rotation, {
-      toValue: auDos ? 0 : 1,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
+    animerVers(auDos ? 0 : 1);
     setAuDos(!auDos);
   }
 
-  const angleFace = rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-  const angleDos = rotation.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
+  const styleFace = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1000 },
+      {
+        scale: interpolate(rotation.value, [0, 0.5, 1], [1, 1 + SOULEVEMENT, 1]),
+      },
+      { rotateY: `${rotation.value * 180}deg` },
+    ],
+  }));
+  const styleDos = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1000 },
+      {
+        scale: interpolate(rotation.value, [0, 0.5, 1], [1, 1 + SOULEVEMENT, 1]),
+      },
+      { rotateY: `${180 + rotation.value * 180}deg` },
+    ],
+  }));
+  // Léger pivot de toute la carte, dans le même sens que le reflet.
+  const stylePivot = useAnimatedStyle(() => {
+    if (!pivote || !inclinaison) return { transform: [] };
+    return {
+      transform: [
+        { perspective: 800 },
+        { rotateY: `${Math.max(-1, Math.min(1, inclinaison.x.value * PIVOT_GAIN)) * PIVOT_MAX}deg` },
+        { rotateX: `${Math.max(-1, Math.min(1, inclinaison.y.value * PIVOT_GAIN)) * PIVOT_MAX}deg` },
+      ],
+    };
+  });
   const cote = taille + COUCHES_TRANCHE;
 
   return (
@@ -77,21 +121,21 @@ export function Carte({
       accessibilityLabel={lieu.nom}
       accessibilityHint={onPress ? 'Ouvre la carte en grand' : 'Retourne la carte'}
       style={{ width: cote, height: cote }}>
-      <Animated.View
-        style={[styles.face, { transform: [{ perspective: 1000 }, { rotateY: angleFace }] }]}>
-        <Carton taille={taille} categorie={categorie}>
-          <Face lieu={lieu} taille={taille} categorie={categorie} />
-        </Carton>
-      </Animated.View>
-      <Animated.View
-        style={[styles.face, { transform: [{ perspective: 1000 }, { rotateY: angleDos }] }]}>
-        <Carton taille={taille} categorie={categorie}>
-          {cachee ? (
-            <DosCache lieu={lieu} taille={taille} categorie={categorie} />
-          ) : (
-            <Dos lieu={lieu} taille={taille} categorie={categorie} debloqueLe={debloqueLe} />
-          )}
-        </Carton>
+      <Animated.View style={[StyleSheet.absoluteFill, stylePivot]}>
+        <Animated.View style={[styles.face, styleFace]}>
+          <Carton taille={taille} categorie={categorie}>
+            <Face lieu={lieu} taille={taille} categorie={categorie} />
+          </Carton>
+        </Animated.View>
+        <Animated.View style={[styles.face, styleDos]}>
+          <Carton taille={taille} categorie={categorie}>
+            {cachee ? (
+              <DosCache lieu={lieu} taille={taille} categorie={categorie} />
+            ) : (
+              <Dos lieu={lieu} taille={taille} categorie={categorie} debloqueLe={debloqueLe} />
+            )}
+          </Carton>
+        </Animated.View>
       </Animated.View>
     </Pressable>
   );
@@ -102,7 +146,12 @@ function mesures(taille: number) {
   const u = taille / 100;
   const rayon = 7 * u;
   const bord = 6 * u;
-  return { u, rayon, bord, rayonInterieur: Math.max(rayon - bord * 0.6, 3 * u) };
+  return {
+    u,
+    rayon,
+    bord,
+    rayonInterieur: Math.max(rayon - bord * 0.6, 3 * u),
+  };
 }
 
 // Le support physique : tranche, ombre courte, bordure de couleur, vernis et grain.
@@ -119,7 +168,11 @@ function Carton({
   const couches = Array.from({ length: COUCHES_TRANCHE }, (_, i) => COUCHES_TRANCHE - i);
 
   return (
-    <View style={{ width: taille + COUCHES_TRANCHE, height: taille + COUCHES_TRANCHE }}>
+    <View
+      style={{
+        width: taille + COUCHES_TRANCHE,
+        height: taille + COUCHES_TRANCHE,
+      }}>
       {couches.map((decalage) => (
         <View
           key={decalage}
@@ -157,31 +210,71 @@ function Carton({
   );
 }
 
-// Reflet brillant en diagonale et grain très fin de carton glacé.
-// Pour l'instant fixe. Plus tard il suivra l'inclinaison du téléphone.
+// Grain très fin de carton glacé, fixe, et reflet brillant en diagonale qui glisse
+// quand on incline le téléphone.
 function Vernis({ taille }: { taille: number }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
-    <Svg width={taille} height={taille} style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Defs>
-        <LinearGradient id={`reflet${id}`} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
-          <Stop offset="0.34" stopColor="#FFFFFF" stopOpacity={0} />
-          <Stop offset="0.44" stopColor="#FFFFFF" stopOpacity={0.22} />
-          <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.06} />
-          <Stop offset="0.58" stopColor="#FFFFFF" stopOpacity={0} />
-          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
-        </LinearGradient>
-        <Pattern id={`grain${id}`} width={5} height={5} patternUnits="userSpaceOnUse">
-          <Rect x={0} y={0} width={1} height={1} fill={couleurs.encre} opacity={0.06} />
-          <Rect x={3} y={1} width={1} height={1} fill="#FFFFFF" opacity={0.08} />
-          <Rect x={1} y={3} width={1} height={1} fill="#FFFFFF" opacity={0.06} />
-          <Rect x={4} y={4} width={1} height={1} fill={couleurs.encre} opacity={0.05} />
-        </Pattern>
-      </Defs>
-      <Rect width={taille} height={taille} fill={`url(#grain${id})`} />
-      <Rect width={taille} height={taille} fill={`url(#reflet${id})`} />
-    </Svg>
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width={taille} height={taille} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <Pattern id={`grain${id}`} width={5} height={5} patternUnits="userSpaceOnUse">
+            <Rect x={0} y={0} width={1} height={1} fill={couleurs.encre} opacity={0.06} />
+            <Rect x={3} y={1} width={1} height={1} fill="#FFFFFF" opacity={0.08} />
+            <Rect x={1} y={3} width={1} height={1} fill="#FFFFFF" opacity={0.06} />
+            <Rect x={4} y={4} width={1} height={1} fill={couleurs.encre} opacity={0.05} />
+          </Pattern>
+        </Defs>
+        <Rect width={taille} height={taille} fill={`url(#grain${id})`} />
+      </Svg>
+      <Reflet taille={taille} id={id} />
+    </View>
+  );
+}
+
+// Bande de lumière dessinée sur un carré trois fois plus grand que la carte, centré dessus.
+// Seul le morceau au-dessus de la carte se voit : on peut le faire glisser sans voir ses bords.
+function Reflet({ taille, id }: { taille: number; id: string }) {
+  const inclinaison = useInclinaison();
+  const course = taille * 0.7; // déplacement maximal du reflet
+
+  const style = useAnimatedStyle(() => {
+    if (!inclinaison) return { transform: [] };
+    return {
+      transform: [
+        { translateX: -inclinaison.x.value * course },
+        { translateY: inclinaison.y.value * course },
+      ],
+    };
+  });
+
+  const grand = taille * 3;
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          left: -taille,
+          top: -taille,
+          width: grand,
+          height: grand,
+        },
+        style,
+      ]}>
+      <Svg width={grand} height={grand}>
+        <Defs>
+          <LinearGradient id={`reflet${id}`} x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="0.447" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="0.48" stopColor="#FFFFFF" stopOpacity={0.22} />
+            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.06} />
+            <Stop offset="0.527" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+          </LinearGradient>
+        </Defs>
+        <Rect width={grand} height={grand} fill={`url(#reflet${id})`} />
+      </Svg>
+    </Animated.View>
   );
 }
 
@@ -190,11 +283,7 @@ function Face({ lieu, taille, categorie }: { lieu: Lieu; taille: number; categor
   const illustration = illustrationDe(lieu.id);
 
   return (
-    <View
-      style={[
-        styles.cadre,
-        { borderRadius: rayonInterieur, borderColor: categorie.lisere },
-      ]}>
+    <View style={[styles.cadre, { borderRadius: rayonInterieur, borderColor: categorie.lisere }]}>
       {illustration !== undefined ? (
         <Image source={illustration} style={StyleSheet.absoluteFill} contentFit="contain" />
       ) : (
@@ -303,7 +392,10 @@ export function CarteCachee({ lieu, taille }: { lieu: Lieu; taille: number }) {
     <View
       accessible
       accessibilityLabel={`Carte ${numeroDe(lieu)}, pas encore débloquée`}
-      style={{ width: taille + COUCHES_TRANCHE, height: taille + COUCHES_TRANCHE }}>
+      style={{
+        width: taille + COUCHES_TRANCHE,
+        height: taille + COUCHES_TRANCHE,
+      }}>
       <Carton taille={taille} categorie={categorie}>
         <DosCache lieu={lieu} taille={taille} categorie={categorie} />
       </Carton>
@@ -312,7 +404,15 @@ export function CarteCachee({ lieu, taille }: { lieu: Lieu; taille: number }) {
 }
 
 // Dos uni d'une carte encore secrète : couleur de la catégorie, numéro et point d'interrogation.
-function DosCache({ lieu, taille, categorie }: { lieu: Lieu; taille: number; categorie: Categorie }) {
+function DosCache({
+  lieu,
+  taille,
+  categorie,
+}: {
+  lieu: Lieu;
+  taille: number;
+  categorie: Categorie;
+}) {
   const { u } = mesures(taille);
   return (
     <View style={[StyleSheet.absoluteFill, styles.centre]}>
@@ -320,7 +420,12 @@ function DosCache({ lieu, taille, categorie }: { lieu: Lieu; taille: number; cat
       <Text
         style={[
           styles.numeroCache,
-          { fontSize: 4.5 * u, right: 7 * u, bottom: 5.5 * u, color: categorie.surBordure },
+          {
+            fontSize: 4.5 * u,
+            right: 7 * u,
+            bottom: 5.5 * u,
+            color: categorie.surBordure,
+          },
         ]}>
         {formaterNumero(numeroDe(lieu))}
       </Text>

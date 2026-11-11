@@ -27,6 +27,7 @@ export function NouvelleCarte({ lieu, date, encoreApres, onFermer }: Props) {
           taille={taille}
           debloqueLe={date}
           revelation
+          pivote
           onRevele={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         />
         <View style={styles.bouton}>
