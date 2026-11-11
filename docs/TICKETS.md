@@ -13,7 +13,7 @@ Règles pour chaque ticket : un ticket à la fois, rien en dehors de son périm�
 - [x] T01 Base locale et suivi continu
 - [x] T02 Les 20 lieux
 - [x] T03 Déblocage
-- [ ] T04 Album
+- [x] T04 Album
 - [ ] T05 Lieux sur la carte
 - [ ] T06 Écran d'accueil et consentement
 - [ ] T07 Trajets du jour

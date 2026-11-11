@@ -15,13 +15,21 @@ type Props = {
   debloqueLe?: Date; // date du tampon « Validé ». Sans date, pas de tampon.
   revelation?: boolean; // démarre face cachée (dos uni) puis se retourne toute seule
   onRevele?: () => void; // appelé au moment où la carte commence à se retourner
+  onPress?: () => void; // si fourni, un tap appelle ceci au lieu de retourner la carte
 };
 
 const DELAI_REVELATION = 700; // millisecondes avant le retournement
 
 const COUCHES_TRANCHE = 4; // épaisseur du carton, 1 point par couche
 
-export function Carte({ lieu, taille, debloqueLe, revelation = false, onRevele }: Props) {
+export function Carte({
+  lieu,
+  taille,
+  debloqueLe,
+  revelation = false,
+  onRevele,
+  onPress,
+}: Props) {
   // 0 : face visible, 1 : dos visible.
   const [rotation] = useState(() => new Animated.Value(revelation ? 1 : 0));
   const [auDos, setAuDos] = useState(revelation);
@@ -64,10 +72,10 @@ export function Carte({ lieu, taille, debloqueLe, revelation = false, onRevele }
 
   return (
     <Pressable
-      onPress={retourner}
+      onPress={onPress ?? retourner}
       accessibilityRole="button"
       accessibilityLabel={lieu.nom}
-      accessibilityHint="Retourne la carte"
+      accessibilityHint={onPress ? 'Ouvre la carte en grand' : 'Retourne la carte'}
       style={{ width: cote, height: cote }}>
       <Animated.View
         style={[styles.face, { transform: [{ perspective: 1000 }, { rotateY: angleFace }] }]}>
@@ -284,6 +292,21 @@ function Dos({
         </Text>
         {debloqueLe && <Tampon taille={taille} couleur={categorie.tampon} date={debloqueLe} />}
       </View>
+    </View>
+  );
+}
+
+// Carte pas encore débloquée : seulement son dos uni, sans retournement possible.
+export function CarteCachee({ lieu, taille }: { lieu: Lieu; taille: number }) {
+  const categorie = categories[lieu.categorie];
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Carte ${numeroDe(lieu)}, pas encore débloquée`}
+      style={{ width: taille + COUCHES_TRANCHE, height: taille + COUCHES_TRANCHE }}>
+      <Carton taille={taille} categorie={categorie}>
+        <DosCache lieu={lieu} taille={taille} categorie={categorie} />
+      </Carton>
     </View>
   );
 }
