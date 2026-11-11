@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import MapView, { Polyline, type Region } from 'react-native-maps';
 
+import { marquerAccueilVu } from '@/accueil/accueilVu';
 import { CarteEnGrand } from '@/album/CarteEnGrand';
 import { distanceEntre, formaterDistance, type Point } from '@/balade/mesures';
 import { MarqueurLieu } from '@/carte/MarqueurLieu';
@@ -176,7 +177,7 @@ export default function Carte() {
       {etat.type === 'a-demander' && (
         <Explication
           titre="Où es-tu ?"
-          texte="L'app a besoin de ta position pour tracer tes balades et débloquer les lieux où tu passes. Elle reste sur ton téléphone et n'est envoyée nulle part."
+          texte="L'app a besoin de ta position pour enregistrer tes trajets et débloquer les lieux où tu passes. Elle reste sur ton téléphone et n'est envoyée nulle part."
           bouton="Autoriser la localisation"
           onPress={demander}
         />
@@ -185,7 +186,7 @@ export default function Carte() {
       {etat.type === 'refuse' && (
         <Explication
           titre="Localisation désactivée"
-          texte="Sans ta position, l'app ne peut pas tracer tes balades ni débloquer de cartes. Tu peux l'activer dans les réglages, rubrique Position. Elle reste sur ton téléphone."
+          texte="Sans ta position, l'app ne peut ni enregistrer tes trajets ni débloquer de cartes. Tu peux l'activer dans les réglages, rubrique Position. Ta position reste sur ton téléphone."
           bouton="Ouvrir les réglages"
           onPress={() => Linking.openSettings()}
         />
@@ -224,6 +225,14 @@ function MenuSimulation({ onFermer }: { onFermer: () => void }) {
           </Pressable>
         ))}
       </ScrollView>
+      <Bouton
+        titre="Revoir l'accueil"
+        variante="clair"
+        onPress={() => {
+          onFermer();
+          marquerAccueilVu(false);
+        }}
+      />
       <Bouton titre="Fermer" onPress={onFermer} />
     </View>
   );

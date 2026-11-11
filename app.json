@@ -36,7 +36,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "L’app utilise ta position pour tracer tes balades et débloquer les lieux où tu passes. Elle reste sur ton téléphone."
+          "locationWhenInUsePermission": "L’app utilise ta position pour enregistrer tes trajets et débloquer les lieux où tu passes. Elle reste sur ton téléphone."
         }
       ],
       "expo-sqlite"

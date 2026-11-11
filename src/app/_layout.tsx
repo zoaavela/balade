@@ -11,6 +11,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useEffect } from 'react';
 
+import { Accueil } from '@/accueil/Accueil';
+import { useAccueilVu } from '@/accueil/accueilVu';
 import { ouvrirBase } from '@/db/base';
 import { DeblocageProvider } from '@/deblocage/Deblocage';
 import { couleurs, polices, trait } from '@/theme';
@@ -33,11 +35,23 @@ export default function RootLayout() {
     BricolageGrotesque_800ExtraBold,
   });
 
+  const accueilVu = useAccueilVu();
+
   useEffect(() => {
     if (policesPretes) SplashScreen.hideAsync();
   }, [policesPretes]);
 
   if (!policesPretes) return null;
+
+  // Premier lancement : l'accueil passe avant tout le reste.
+  if (!accueilVu) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <Accueil />
+      </>
+    );
+  }
 
   return (
     <DeblocageProvider>

@@ -15,7 +15,7 @@ Règles pour chaque ticket : un ticket à la fois, rien en dehors de son périm�
 - [x] T03 Déblocage
 - [x] T04 Album
 - [x] T05 Lieux sur la carte
-- [ ] T06 Écran d'accueil et consentement
+- [x] T06 Écran d'accueil et consentement
 - [ ] T07 Trajets du jour
 - [ ] T08 Build de développement
 - [ ] T09 Suivi en arrière-plan

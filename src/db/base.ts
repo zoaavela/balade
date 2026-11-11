@@ -24,6 +24,11 @@ export function ouvrirBase(): SQLite.SQLiteDatabase {
       lieu_id TEXT PRIMARY KEY, -- une seule ligne par lieu
       debloquee_le INTEGER NOT NULL -- millisecondes depuis 1970
     );
+
+    CREATE TABLE IF NOT EXISTS reglages (
+      cle TEXT PRIMARY KEY,
+      valeur TEXT NOT NULL
+    );
   `);
   return base;
 }
