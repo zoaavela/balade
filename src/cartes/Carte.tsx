@@ -160,7 +160,7 @@ function Face({ lieu, taille, categorie }: { lieu: Lieu; taille: number; categor
       {illustration !== undefined ? (
         <Image source={illustration} style={StyleSheet.absoluteFill} contentFit="contain" />
       ) : (
-        <Remplacement taille={taille} />
+        <Remplacement taille={taille} categorie={categorie} />
       )}
       <Text
         style={[styles.titre, { fontSize: 7 * u, marginTop: 4 * u, marginHorizontal: 5 * u }]}
@@ -176,8 +176,9 @@ function Face({ lieu, taille, categorie }: { lieu: Lieu; taille: number; categor
   );
 }
 
-// Illustration neutre en attendant la vraie : un disque et une ligne de sol.
-function Remplacement({ taille }: { taille: number }) {
+// Illustration neutre en attendant la vraie : un disque teinté de la couleur
+// de la catégorie et une ligne de sol.
+function Remplacement({ taille, categorie }: { taille: number; categorie: Categorie }) {
   const { u } = mesures(taille);
   const diametre = 42 * u;
   return (
@@ -187,7 +188,7 @@ function Remplacement({ taille }: { taille: number }) {
           width: diametre,
           height: diametre,
           borderRadius: diametre / 2,
-          backgroundColor: melanger(couleurs.fond, couleurs.encre, 0.08),
+          backgroundColor: melanger(couleurs.fond, categorie.tranche, 0.3),
           marginTop: 8 * u,
         }}
       />
