@@ -13,6 +13,8 @@ import {
 import MapView, { Polyline, type Region } from 'react-native-maps';
 
 import { marquerAccueilVu } from '@/accueil/accueilVu';
+import { supabase } from '@/compte/supabase';
+import { effacerBaseCompte } from '@/db/base';
 import { CarteEnGrand } from '@/album/CarteEnGrand';
 import { distanceEntre, formaterDistance, type Point } from '@/balade/mesures';
 import { MarqueurLieu } from '@/carte/MarqueurLieu';
@@ -318,6 +320,16 @@ function MenuSimulation({ onFermer }: { onFermer: () => void }) {
           </Pressable>
         ))}
       </ScrollView>
+      <Bouton
+        titre="Simuler un nouveau téléphone"
+        variante="clair"
+        onPress={async () => {
+          // On se déconnecte d'abord : les écrans qui lisent la base disparaissent,
+          // puis on efface la base locale. À la reconnexion, tout revient du compte.
+          await supabase?.auth.signOut();
+          setTimeout(effacerBaseCompte, 500); // le temps que les écrans se ferment
+        }}
+      />
       <Bouton
         titre="Revoir l'accueil"
         variante="clair"

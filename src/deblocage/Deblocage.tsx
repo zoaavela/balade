@@ -10,6 +10,7 @@ import { NouvelleCarte } from './NouvelleCarte';
 type Valeur = {
   debloquees: Map<string, Date>; // lieu_id et date de déblocage
   traiterPoint: (point: Point) => void; // à appeler pour chaque nouvelle position
+  rafraichir: () => void; // relit les cartes depuis la base (après une synchronisation)
 };
 
 const Contexte = createContext<Valeur | null>(null);
@@ -36,10 +37,16 @@ export function DeblocageProvider({ children }: { children: ReactNode }) {
     setAMontrer((file) => [...file, ...nouveaux.map((lieu) => ({ lieu, date }))]);
   }, []);
 
+  const rafraichir = useCallback(() => {
+    const cartes = cartesDebloquees();
+    ids.current = new Set(cartes.keys());
+    setDebloquees(cartes);
+  }, []);
+
   const enCours = aMontrer[0];
 
   return (
-    <Contexte.Provider value={{ debloquees, traiterPoint }}>
+    <Contexte.Provider value={{ debloquees, traiterPoint, rafraichir }}>
       {children}
       {enCours && (
         <NouvelleCarte

@@ -9,14 +9,15 @@ import Tabs from 'expo-router/js-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { useEffect } from 'react';
+import { Fragment, useEffect } from 'react';
 
 import { Accueil } from '@/accueil/Accueil';
 import { useAccueilVu } from '@/accueil/accueilVu';
 import { EcranConnexion } from '@/compte/EcranConnexion';
 import { useSession } from '@/compte/useSession';
-import { ouvrirBase } from '@/db/base';
+import { ouvrirBase, utiliserCompte } from '@/db/base';
 import { DeblocageProvider } from '@/deblocage/Deblocage';
+import { SynchroAuto } from '@/sync/SynchroAuto';
 import { couleurs, polices, trait } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -68,8 +69,15 @@ export default function RootLayout() {
     );
   }
 
+  // Chaque compte a sa propre base locale. La clé force un nouveau départ
+  // de tous les écrans quand on change de compte.
+  const userId = session.user.id;
+  utiliserCompte(userId);
+
   return (
-    <DeblocageProvider>
+    <Fragment key={userId}>
+      <DeblocageProvider>
+      <SynchroAuto userId={userId} />
       <StatusBar style="dark" />
       <Tabs
         screenOptions={{
@@ -89,6 +97,7 @@ export default function RootLayout() {
         <Tabs.Screen name="defis" options={{ title: 'Défis', tabBarIcon: icone('flag') }} />
         <Tabs.Screen name="profil" options={{ title: 'Profil', tabBarIcon: icone('person') }} />
       </Tabs>
-    </DeblocageProvider>
+      </DeblocageProvider>
+    </Fragment>
   );
 }

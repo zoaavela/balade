@@ -1,8 +1,8 @@
-import { ouvrirBase } from './base';
+import { baseCompte } from './base';
 
 // Enregistre le déblocage d'un lieu. Renvoie true si c'est nouveau, false s'il l'était déjà.
 export function debloquer(lieuId: string, date: Date): boolean {
-  const resultat = ouvrirBase().runSync(
+  const resultat = baseCompte().runSync(
     'INSERT OR IGNORE INTO cartes_debloquees (lieu_id, debloquee_le) VALUES (?, ?)',
     [lieuId, date.getTime()],
   );
@@ -11,7 +11,7 @@ export function debloquer(lieuId: string, date: Date): boolean {
 
 // Toutes les cartes débloquées, avec leur date.
 export function cartesDebloquees(): Map<string, Date> {
-  const lignes = ouvrirBase().getAllSync<{ lieu_id: string; debloquee_le: number }>(
+  const lignes = baseCompte().getAllSync<{ lieu_id: string; debloquee_le: number }>(
     'SELECT lieu_id, debloquee_le FROM cartes_debloquees',
     [],
   );
