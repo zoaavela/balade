@@ -22,9 +22,9 @@ Les numéros restent fixes, mais l'ordre à suivre est celui de cette liste : le
 - [x] T13 Synchronisation
 - [x] T07 Trajets du jour
 - [ ] T08 Build de développement
-- [ ] T09 Suivi en arrière-plan
+- [ ] T09 Suivi en arrière-plan (codé, à tester avec la build)
 - [ ] T10 Test batterie
-- [ ] T11 Pas
+- [x] T11 Pas (compteur du téléphone, 7 jours recopiés chaque jour)
 - [x] T14 Illustrations
 - [x] T15 Vernis et retournement
 - [x] T16 Profil (pas en attente du T11)
