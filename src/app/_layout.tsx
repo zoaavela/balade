@@ -12,6 +12,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useEffect } from 'react';
 
 import { ouvrirBase } from '@/db/base';
+import { DeblocageProvider } from '@/deblocage/Deblocage';
 import { couleurs, polices, trait } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -39,7 +40,7 @@ export default function RootLayout() {
   if (!policesPretes) return null;
 
   return (
-    <>
+    <DeblocageProvider>
       <StatusBar style="dark" />
       <Tabs
         screenOptions={{
@@ -59,6 +60,6 @@ export default function RootLayout() {
         <Tabs.Screen name="defis" options={{ title: 'Défis', tabBarIcon: icone('flag') }} />
         <Tabs.Screen name="profil" options={{ title: 'Profil', tabBarIcon: icone('person') }} />
       </Tabs>
-    </>
+    </DeblocageProvider>
   );
 }

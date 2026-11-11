@@ -8,8 +8,8 @@ import { ajouterPoint, pointsDuJour } from '@/db/points';
 const PRECISION_MAX = 30; // mètres : au-delà, le point est jeté pour éviter les zigzags
 
 // Suit la position tant que l'app est ouverte et que la localisation est autorisée.
-// Chaque point valable est écrit dans la base. Renvoie le tracé du jour.
-export function useSuiviPosition(autorise: boolean): Point[] {
+// Chaque point valable est écrit dans la base puis passé à onPoint. Renvoie le tracé du jour.
+export function useSuiviPosition(autorise: boolean, onPoint: (point: Point) => void): Point[] {
   const [points, setPoints] = useState<Point[]>([]);
 
   // Relit le tracé du jour au démarrage et à chaque retour dans l'app (utile après minuit).
@@ -37,6 +37,7 @@ export function useSuiviPosition(autorise: boolean): Point[] {
         if (accuracy == null || accuracy > PRECISION_MAX) return;
         ajouterPoint({ latitude, longitude, precision_m: accuracy, horodatage: position.timestamp });
         setPoints((p) => [...p, { latitude, longitude }]);
+        onPoint({ latitude, longitude });
       },
     )
       .then((abonnement) => {
@@ -51,7 +52,7 @@ export function useSuiviPosition(autorise: boolean): Point[] {
       arrete = true;
       suivi?.remove();
     };
-  }, [autorise]);
+  }, [autorise, onPoint]);
 
   return points;
 }

@@ -1,10 +1,21 @@
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Linking, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  AppState,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import MapView, { Polyline, type Region } from 'react-native-maps';
 
+import { lieux } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
 import { Ecran } from '@/components/ecran';
+import { useDeblocage } from '@/deblocage/Deblocage';
 import { useSuiviPosition } from '@/suivi/useSuiviPosition';
 import { couleurs, espace, polices, trait } from '@/theme';
 
@@ -22,7 +33,9 @@ const ZOOM = 0.012; // environ 1 km de large
 export default function Carte() {
   const [etat, setEtat] = useState<Etat>({ type: 'verification' });
   const carteAffichee = useRef(false);
-  const points = useSuiviPosition(etat.type === 'pret');
+  const { traiterPoint } = useDeblocage();
+  const points = useSuiviPosition(etat.type === 'pret', traiterPoint);
+  const [menuSimulation, setMenuSimulation] = useState(false);
 
   const chercherPosition = useCallback(async () => {
     carteAffichee.current = false;
@@ -76,8 +89,13 @@ export default function Carte() {
   }, [verifier]);
 
   return (
-    <Ecran titre="Carte">
-      {etat.type === 'pret' && (
+    <Ecran
+      titre="Carte"
+      // Menu caché de simulation : n'existe qu'en mode développement.
+      onAppuiLongTitre={__DEV__ ? () => setMenuSimulation(true) : undefined}>
+      {__DEV__ && menuSimulation && <MenuSimulation onFermer={() => setMenuSimulation(false)} />}
+
+      {!menuSimulation && etat.type === 'pret' && (
         <View style={styles.cadre}>
           <MapView
             style={StyleSheet.absoluteFill}
@@ -136,6 +154,32 @@ export default function Carte() {
   );
 }
 
+// Uniquement en développement : simule ta position sur un lieu pour tester le déblocage.
+// Le faux point n'est pas écrit dans ton tracé.
+function MenuSimulation({ onFermer }: { onFermer: () => void }) {
+  const { debloquees, traiterPoint } = useDeblocage();
+  return (
+    <View style={styles.menu}>
+      <Text style={styles.sousTitre}>Simuler une position</Text>
+      <ScrollView contentContainerStyle={styles.menuListe}>
+        {lieux.map((lieu) => (
+          <Pressable
+            key={lieu.id}
+            style={styles.menuLigne}
+            onPress={() => {
+              onFermer();
+              traiterPoint({ latitude: lieu.latitude, longitude: lieu.longitude });
+            }}>
+            <Text style={styles.texte}>{lieu.nom}</Text>
+            {debloquees.has(lieu.id) && <Text style={styles.menuDeja}>débloqué</Text>}
+          </Pressable>
+        ))}
+      </ScrollView>
+      <Bouton titre="Fermer" onPress={onFermer} />
+    </View>
+  );
+}
+
 function Explication(props: { titre: string; texte: string; bouton: string; onPress: () => void }) {
   return (
     <View style={styles.explication}>
@@ -183,5 +227,27 @@ const styles = StyleSheet.create({
   },
   espaceBouton: {
     marginTop: espace.s,
+  },
+  menu: {
+    flex: 1,
+    gap: espace.m,
+    paddingTop: espace.m,
+    paddingBottom: espace.m,
+  },
+  menuListe: {
+    gap: espace.xs,
+  },
+  menuLigne: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: espace.s,
+    borderBottomWidth: 1,
+    borderBottomColor: couleurs.encreDouce,
+  },
+  menuDeja: {
+    fontFamily: polices.moyen,
+    fontSize: 14,
+    color: couleurs.encreDouce,
   },
 });

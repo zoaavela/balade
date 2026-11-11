@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
 
@@ -13,16 +13,42 @@ type Props = {
   lieu: Lieu;
   taille: number; // côté du carré, en points
   debloqueLe?: Date; // date du tampon « Validé ». Sans date, pas de tampon.
+  revelation?: boolean; // démarre face cachée (dos uni) puis se retourne toute seule
+  onRevele?: () => void; // appelé au moment où la carte commence à se retourner
 };
+
+const DELAI_REVELATION = 700; // millisecondes avant le retournement
 
 const COUCHES_TRANCHE = 4; // épaisseur du carton, 1 point par couche
 
-export function Carte({ lieu, taille, debloqueLe }: Props) {
-  const [rotation] = useState(() => new Animated.Value(0));
-  const [auDos, setAuDos] = useState(false);
+export function Carte({ lieu, taille, debloqueLe, revelation = false, onRevele }: Props) {
+  // 0 : face visible, 1 : dos visible.
+  const [rotation] = useState(() => new Animated.Value(revelation ? 1 : 0));
+  const [auDos, setAuDos] = useState(revelation);
+  // Pendant la révélation, le dos montré est le dos uni. Une fois la carte retournée,
+  // il redevient le dos normal (nom, anecdote, tampon).
+  const [cachee, setCachee] = useState(revelation);
   const categorie = categories[lieu.categorie];
 
+  useEffect(() => {
+    if (!revelation) return;
+    const minuteur = setTimeout(() => {
+      onRevele?.();
+      setAuDos(false);
+      Animated.spring(rotation, {
+        toValue: 0,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start(() => setCachee(false));
+    }, DELAI_REVELATION);
+    return () => clearTimeout(minuteur);
+    // Ne se joue qu'une fois, à l'apparition de la carte.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function retourner() {
+    if (cachee) return; // on laisse la révélation se finir
     Animated.spring(rotation, {
       toValue: auDos ? 0 : 1,
       friction: 8,
@@ -52,7 +78,11 @@ export function Carte({ lieu, taille, debloqueLe }: Props) {
       <Animated.View
         style={[styles.face, { transform: [{ perspective: 1000 }, { rotateY: angleDos }] }]}>
         <Carton taille={taille} categorie={categorie}>
-          <Dos lieu={lieu} taille={taille} categorie={categorie} debloqueLe={debloqueLe} />
+          {cachee ? (
+            <DosCache lieu={lieu} taille={taille} categorie={categorie} />
+          ) : (
+            <Dos lieu={lieu} taille={taille} categorie={categorie} debloqueLe={debloqueLe} />
+          )}
         </Carton>
       </Animated.View>
     </Pressable>
@@ -258,6 +288,23 @@ function Dos({
   );
 }
 
+// Dos uni d'une carte encore secrète : couleur de la catégorie, numéro et point d'interrogation.
+function DosCache({ lieu, taille, categorie }: { lieu: Lieu; taille: number; categorie: Categorie }) {
+  const { u } = mesures(taille);
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.centre]}>
+      <Text style={[styles.mystere, { fontSize: 46 * u, color: categorie.surBordure }]}>?</Text>
+      <Text
+        style={[
+          styles.numeroCache,
+          { fontSize: 4.5 * u, right: 7 * u, bottom: 5.5 * u, color: categorie.surBordure },
+        ]}>
+        {formaterNumero(numeroDe(lieu))}
+      </Text>
+    </View>
+  );
+}
+
 function Tampon({ taille, couleur, date }: { taille: number; couleur: string; date: Date }) {
   const { u } = mesures(taille);
   return (
@@ -364,6 +411,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: polices.moyen,
     color: couleurs.encreDouce,
+  },
+  mystere: {
+    fontFamily: polices.extraGras,
+  },
+  numeroCache: {
+    position: 'absolute',
+    fontFamily: polices.gras,
   },
   tampon: {
     borderWidth: trait,

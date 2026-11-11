@@ -8,6 +8,7 @@ export type Categorie = {
   lisere: string; // trait autour de l'illustration et du panneau du dos
   tranche: string; // épaisseur du carton, assombrie couche après couche
   tampon: string; // encre du tampon « Validé »
+  surBordure: string; // texte posé directement sur la couleur de bordure (dos uni)
 };
 
 export const categories: Record<CategorieId, Categorie> = {
@@ -17,6 +18,7 @@ export const categories: Record<CategorieId, Categorie> = {
     lisere: couleurs.encre,
     tranche: couleurs.brique,
     tampon: couleurs.brique,
+    surBordure: couleurs.fond,
   },
   'lieux-de-vie': {
     nom: 'Lieux de vie',
@@ -24,6 +26,7 @@ export const categories: Record<CategorieId, Categorie> = {
     lisere: couleurs.encre,
     tranche: couleurs.cobalt,
     tampon: couleurs.cobalt,
+    surBordure: couleurs.fond,
   },
   'mysteres-nature': {
     nom: 'Mystères et nature',
@@ -31,6 +34,7 @@ export const categories: Record<CategorieId, Categorie> = {
     lisere: couleurs.encre,
     tranche: couleurs.vertBouteille,
     tampon: couleurs.vertBouteille,
+    surBordure: couleurs.fond,
   },
   quartiers: {
     nom: 'Quartiers',
@@ -38,6 +42,7 @@ export const categories: Record<CategorieId, Categorie> = {
     lisere: couleurs.encre,
     tranche: couleurs.ocre,
     tampon: couleurs.ocre,
+    surBordure: couleurs.encre, // le crème se lit mal sur l'ocre
   },
   // Or sur encre : cadre noir, liseré et tranche dorés.
   legendaire: {
@@ -46,5 +51,6 @@ export const categories: Record<CategorieId, Categorie> = {
     lisere: couleurs.or,
     tranche: couleurs.or,
     tampon: couleurs.encre,
+    surBordure: couleurs.or,
   },
 };

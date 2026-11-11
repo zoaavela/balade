@@ -5,16 +5,18 @@ import { couleurs, espace, polices, trait } from '@/theme';
 type Props = {
   titre: string;
   onPress: () => void;
+  variante?: 'encre' | 'clair'; // clair : pour poser le bouton sur un fond sombre
 };
 
-// Bouton principal : aplat d'encre, texte crème.
-export function Bouton({ titre, onPress }: Props) {
+// Bouton principal : aplat d'encre et texte crème, ou l'inverse en variante claire.
+export function Bouton({ titre, onPress, variante = 'encre' }: Props) {
+  const clair = variante === 'clair';
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.bouton, pressed && styles.appuye]}>
-      <Text style={styles.texte}>{titre}</Text>
+      style={({ pressed }) => [styles.bouton, clair && styles.boutonClair, pressed && styles.appuye]}>
+      <Text style={[styles.texte, clair && styles.texteClair]}>{titre}</Text>
     </Pressable>
   );
 }
@@ -29,6 +31,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: espace.l,
     alignItems: 'center',
   },
+  boutonClair: {
+    backgroundColor: couleurs.fond,
+  },
   appuye: {
     opacity: 0.8,
   },
@@ -36,5 +41,8 @@ const styles = StyleSheet.create({
     fontFamily: polices.gras,
     fontSize: 17,
     color: couleurs.fond,
+  },
+  texteClair: {
+    color: couleurs.encre,
   },
 });
