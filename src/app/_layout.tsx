@@ -11,9 +11,11 @@ import { StatusBar } from 'expo-status-bar';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useEffect } from 'react';
 
+import { ouvrirBase } from '@/db/base';
 import { couleurs, polices, trait } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+ouvrirBase(); // crée les tables au premier lancement
 
 // Icônes système iOS en attendant nos propres pictos.
 function icone(nom: SymbolViewProps['name']) {

@@ -3,10 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Linking, StyleSheet, Text, View } from 'react-native';
 import MapView, { Polyline, type Region } from 'react-native-maps';
 
-import { formaterChrono, formaterDistance, formaterDuree } from '@/balade/mesures';
-import { useBalade } from '@/balade/useBalade';
 import { Bouton } from '@/components/bouton';
 import { Ecran } from '@/components/ecran';
+import { useSuiviPosition } from '@/suivi/useSuiviPosition';
 import { couleurs, espace, polices, trait } from '@/theme';
 
 // Les différents moments de l'écran Carte.
@@ -23,7 +22,7 @@ const ZOOM = 0.012; // environ 1 km de large
 export default function Carte() {
   const [etat, setEtat] = useState<Etat>({ type: 'verification' });
   const carteAffichee = useRef(false);
-  const balade = useBalade();
+  const points = useSuiviPosition(etat.type === 'pret');
 
   const chercherPosition = useCallback(async () => {
     carteAffichee.current = false;
@@ -51,7 +50,7 @@ export default function Carte() {
   const verifier = useCallback(async () => {
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status === 'granted') {
-      // Carte déjà là (retour dans l'app en pleine balade) : on n'y touche pas.
+      // Carte déjà affichée (retour dans l'app) : on n'y touche pas.
       if (!carteAffichee.current) chercherPosition();
     } else if (status === 'denied') {
       carteAffichee.current = false;
@@ -84,13 +83,12 @@ export default function Carte() {
             style={StyleSheet.absoluteFill}
             initialRegion={etat.region}
             showsUserLocation
-            followsUserLocation={balade.statut === 'en-cours'}
             showsPointsOfInterests={false}
             showsCompass={false}
             pitchEnabled={false}>
-            {balade.points.length > 1 && (
+            {points.length > 1 && (
               <Polyline
-                coordinates={balade.points}
+                coordinates={points}
                 strokeColor={couleurs.encre}
                 strokeWidth={5}
                 lineCap="round"
@@ -98,31 +96,6 @@ export default function Carte() {
               />
             )}
           </MapView>
-
-          {balade.statut === 'en-cours' && (
-            <View style={[styles.panneau, styles.compteurs]}>
-              <Compteur valeur={formaterChrono(balade.duree)} legende="Durée" />
-              <View style={styles.separateur} />
-              <Compteur valeur={formaterDistance(balade.distance)} legende="Distance" />
-            </View>
-          )}
-
-          <View style={styles.bas}>
-            {balade.statut === 'terminee' ? (
-              <View style={[styles.panneau, styles.resume]}>
-                <Text style={styles.sousTitre}>Balade terminée</Text>
-                <View style={styles.ligne}>
-                  <Compteur valeur={formaterDistance(balade.distance)} legende="Distance" />
-                  <Compteur valeur={formaterDuree(balade.duree)} legende="Durée" />
-                </View>
-                <Bouton titre="Fermer" onPress={balade.fermerResume} />
-              </View>
-            ) : balade.statut === 'en-cours' ? (
-              <Bouton titre="Terminer" onPress={balade.terminer} />
-            ) : (
-              <Bouton titre="Démarrer une balade" onPress={balade.demarrer} />
-            )}
-          </View>
         </View>
       )}
 
@@ -160,15 +133,6 @@ export default function Carte() {
         />
       )}
     </Ecran>
-  );
-}
-
-function Compteur({ valeur, legende }: { valeur: string; legende: string }) {
-  return (
-    <View style={styles.compteur}>
-      <Text style={styles.valeur}>{valeur}</Text>
-      <Text style={styles.legende}>{legende}</Text>
-    </View>
   );
 }
 
@@ -219,53 +183,5 @@ const styles = StyleSheet.create({
   },
   espaceBouton: {
     marginTop: espace.s,
-  },
-  panneau: {
-    backgroundColor: couleurs.fond,
-    borderColor: couleurs.encre,
-    borderWidth: trait,
-    borderRadius: 14,
-  },
-  compteurs: {
-    position: 'absolute',
-    top: espace.m,
-    left: espace.m,
-    right: espace.m,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: espace.s,
-  },
-  separateur: {
-    width: trait,
-    alignSelf: 'stretch',
-    backgroundColor: couleurs.encre,
-  },
-  compteur: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  valeur: {
-    fontFamily: polices.extraGras,
-    fontSize: 28,
-    color: couleurs.encre,
-    fontVariant: ['tabular-nums'], // chiffres de même largeur : le chrono ne tremble pas
-  },
-  legende: {
-    fontFamily: polices.moyen,
-    fontSize: 13,
-    color: couleurs.encreDouce,
-  },
-  bas: {
-    position: 'absolute',
-    left: espace.m,
-    right: espace.m,
-    bottom: espace.m,
-  },
-  resume: {
-    padding: espace.m,
-    gap: espace.m,
-  },
-  ligne: {
-    flexDirection: 'row',
   },
 });

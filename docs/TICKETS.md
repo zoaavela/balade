@@ -10,7 +10,7 @@ Règles pour chaque ticket : un ticket à la fois, rien en dehors de son périm�
 - [x] Composant de carte de lieu (face, dos, retournement)
 - [x] Carte centrée sur la position
 - [x] Prototype de tracé (à retirer au T01)
-- [ ] T01 Base locale et suivi continu
+- [x] T01 Base locale et suivi continu
 - [ ] T02 Les 20 lieux
 - [ ] T03 Déblocage
 - [ ] T04 Album
