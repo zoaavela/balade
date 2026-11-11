@@ -21,6 +21,19 @@ export const polices = {
 
 export const trait = 2.5; // épaisseur des contours
 
+// Mélange deux couleurs hexadécimales. t = 0 donne a, t = 1 donne b.
+// Sert à fabriquer des teintes voisines (tranche des cartes) sans inventer de nouvelles couleurs.
+export function melanger(a: string, b: string, t: number): string {
+  const lire = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const [ca, cb] = [lire(a), lire(b)];
+  return (
+    '#' +
+    ca
+      .map((v, i) => Math.round(v + (cb[i] - v) * t).toString(16).padStart(2, '0'))
+      .join('')
+  );
+}
+
 export const espace = {
   xs: 4,
   s: 8,
