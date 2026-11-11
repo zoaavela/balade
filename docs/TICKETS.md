@@ -27,7 +27,7 @@ Les numéros restent fixes, mais l'ordre à suivre est celui de cette liste : le
 - [x] T11 Pas (compteur du téléphone, 7 jours recopiés chaque jour)
 - [x] T14 Illustrations
 - [x] T15 Vernis et retournement
-- [x] T16 Profil (pas en attente du T11)
+- [x] T16 Profil
 - [ ] T17 Finitions et essai terrain
 
 ---
