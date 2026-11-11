@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -20,8 +20,11 @@ import { MarqueurLieu } from '@/carte/MarqueurLieu';
 import { lieux, type Lieu } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
 import { Ecran } from '@/components/ecran';
+import { joursAvecPoints, pointsDuJour } from '@/db/points';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { useSuiviPosition } from '@/suivi/useSuiviPosition';
+import { decouperEnTrajets } from '@/trajets/decouper';
+import { debutDuJour, nommerJour } from '@/trajets/jours';
 import { couleurs, espace, polices, trait } from '@/theme';
 
 // Les différents moments de l'écran Carte.
@@ -45,6 +48,50 @@ export default function Carte() {
   const [maPosition, setMaPosition] = useState<Point | null>(null);
   // Sur iOS, toucher un marqueur peut aussi toucher la carte dessous : on ignore ce second tap.
   const dernierTapMarqueur = useRef(0);
+  const refCarte = useRef<MapView>(null);
+
+  // Jour affiché : null pour aujourd'hui (tracé en direct), sinon un jour passé lu dans la base.
+  const [jour, setJour] = useState<Date | null>(null);
+  const aDesPointsAujourdhui = points.length > 0;
+  const joursPasses = useMemo(() => {
+    const aujourdhui = debutDuJour(new Date()).getTime();
+    return joursAvecPoints().filter((j) => j.getTime() < aujourdhui);
+    // Relu quand on change de jour, ou quand le premier point du jour arrive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jour, aDesPointsAujourdhui]);
+  const pointsAffiches = useMemo(() => (jour ? pointsDuJour(jour) : points), [jour, points]);
+  const trajets = useMemo(() => decouperEnTrajets(pointsAffiches), [pointsAffiches]);
+
+  // Place du jour affiché dans la liste des jours passés (-1 : aujourd'hui).
+  const rang = jour ? joursPasses.findIndex((j) => j.getTime() === jour.getTime()) : -1;
+  const jourPrecedent = jour ? joursPasses[rang - 1] : joursPasses[joursPasses.length - 1];
+  const surAujourdhui = jour === null;
+
+  function allerAuJour(nouveau: Date | null) {
+    setJour(nouveau);
+    setChoisi(null);
+    if (nouveau) {
+      // Un jour passé : on cadre la carte sur tous ses points.
+      const coordonnees = pointsDuJour(nouveau);
+      if (coordonnees.length > 0) {
+        refCarte.current?.fitToCoordinates(coordonnees, {
+          edgePadding: { top: 120, right: 50, bottom: 60, left: 50 },
+          animated: true,
+        });
+      }
+    } else {
+      // Retour à aujourd'hui : on revient sur toi.
+      const ici = maPosition ?? points.at(-1);
+      if (ici) {
+        refCarte.current?.animateToRegion({
+          latitude: ici.latitude,
+          longitude: ici.longitude,
+          latitudeDelta: ZOOM,
+          longitudeDelta: ZOOM,
+        });
+      }
+    }
+  }
 
   const chercherPosition = useCallback(async () => {
     carteAffichee.current = false;
@@ -107,6 +154,7 @@ export default function Carte() {
       {!menuSimulation && etat.type === 'pret' && (
         <View style={styles.cadre}>
           <MapView
+            ref={refCarte}
             style={StyleSheet.absoluteFill}
             initialRegion={etat.region}
             showsUserLocation
@@ -120,14 +168,18 @@ export default function Carte() {
             showsPointsOfInterests={false}
             showsCompass={false}
             pitchEnabled={false}>
-            {points.length > 1 && (
-              <Polyline
-                coordinates={points}
-                strokeColor={couleurs.encre}
-                strokeWidth={5}
-                lineCap="round"
-                lineJoin="round"
-              />
+            {trajets.map(
+              (trajet) =>
+                trajet.length > 1 && (
+                  <Polyline
+                    key={trajet[0].horodatage}
+                    coordinates={trajet}
+                    strokeColor={couleurs.encre}
+                    strokeWidth={5}
+                    lineCap="round"
+                    lineJoin="round"
+                  />
+                ),
             )}
             {lieux.map((lieu) => (
               <MarqueurLieu
@@ -141,6 +193,27 @@ export default function Carte() {
               />
             ))}
           </MapView>
+
+          <View style={styles.selecteur}>
+            <Fleche
+              sens="‹"
+              actif={jourPrecedent !== undefined}
+              onPress={() => jourPrecedent && allerAuJour(jourPrecedent)}
+              libelle="Jour précédent"
+            />
+            <View style={styles.selecteurMilieu}>
+              <Text style={styles.selecteurJour} numberOfLines={1}>
+                {nommerJour(jour ?? new Date())}
+              </Text>
+              <Text style={styles.selecteurTrajets}>{compterTrajets(trajets.length)}</Text>
+            </View>
+            <Fleche
+              sens="›"
+              actif={!surAujourdhui}
+              onPress={() => !surAujourdhui && allerAuJour(joursPasses[rang + 1] ?? null)}
+              libelle="Jour suivant"
+            />
+          </View>
 
           {choisi && !debloquees.has(choisi.id) && (
             <View style={styles.infoLieu}>
@@ -201,6 +274,26 @@ export default function Carte() {
         />
       )}
     </Ecran>
+  );
+}
+
+function compterTrajets(n: number): string {
+  if (n === 0) return 'Aucun trajet';
+  return n === 1 ? '1 trajet' : `${n} trajets`;
+}
+
+function Fleche(props: { sens: string; actif: boolean; onPress: () => void; libelle: string }) {
+  return (
+    <Pressable
+      onPress={props.onPress}
+      disabled={!props.actif}
+      accessibilityRole="button"
+      accessibilityLabel={props.libelle}
+      accessibilityState={{ disabled: !props.actif }}
+      hitSlop={8}
+      style={styles.fleche}>
+      <Text style={[styles.flecheTexte, !props.actif && styles.flecheInactive]}>{props.sens}</Text>
+    </Pressable>
   );
 }
 
@@ -285,6 +378,46 @@ const styles = StyleSheet.create({
   },
   espaceBouton: {
     marginTop: espace.s,
+  },
+  selecteur: {
+    position: 'absolute',
+    top: espace.m,
+    left: espace.m,
+    right: espace.m,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: espace.xs,
+    backgroundColor: couleurs.fond,
+    borderColor: couleurs.encre,
+    borderWidth: trait,
+    borderRadius: 14,
+  },
+  selecteurMilieu: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  selecteurJour: {
+    fontFamily: polices.extraGras,
+    fontSize: 18,
+    color: couleurs.encre,
+  },
+  selecteurTrajets: {
+    fontFamily: polices.moyen,
+    fontSize: 13,
+    color: couleurs.encreDouce,
+  },
+  fleche: {
+    width: 48,
+    alignItems: 'center',
+  },
+  flecheTexte: {
+    fontFamily: polices.extraGras,
+    fontSize: 32,
+    lineHeight: 36,
+    color: couleurs.encre,
+  },
+  flecheInactive: {
+    opacity: 0.2,
   },
   infoLieu: {
     position: 'absolute',
