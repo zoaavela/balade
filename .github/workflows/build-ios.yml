@@ -5,9 +5,7 @@
 name: Build iOS de développement
 
 on:
-  workflow_dispatch: # bouton « Run workflow » dans l'onglet Actions
-  push:
-    branches: [t08-build] # temporaire : permet de tester avant la fusion dans main
+  workflow_dispatch: # bouton « Run workflow » dans l'onglet Actions, rien d'automatique
 
 permissions:
   contents: read

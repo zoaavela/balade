@@ -17,7 +17,7 @@ Règles pour chaque ticket : un ticket à la fois, rien en dehors de son périm�
 - [x] T05 Lieux sur la carte
 - [x] T06 Écran d'accueil et consentement
 - [x] T07 Trajets du jour
-- [ ] T08 Build de développement
+- [ ] T08 Build de développement (compilé sur GitHub le 11 novembre, à tester sur iPhone)
 - [ ] T09 Suivi en arrière-plan
 - [ ] T10 Test batterie
 - [ ] T11 Pas
