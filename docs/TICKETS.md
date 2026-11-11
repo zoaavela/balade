@@ -6,6 +6,8 @@ Règles pour chaque ticket : un ticket à la fois, rien en dehors de son périm�
 
 ## Avancement
 
+Les numéros restent fixes, mais l'ordre à suivre est celui de cette liste : le compte étant obligatoire, T12 et T13 passent avant la build de développement.
+
 - [x] Base visuelle (thème, police, 4 onglets)
 - [x] Composant de carte de lieu (face, dos, retournement)
 - [x] Carte centrée sur la position
@@ -15,14 +17,14 @@ Règles pour chaque ticket : un ticket à la fois, rien en dehors de son périm�
 - [x] T03 Déblocage
 - [x] T04 Album
 - [x] T05 Lieux sur la carte
-- [x] T06 Écran d'accueil et consentement
+- [x] T12 Comptes Supabase
+- [ ] T06 Écran d'accueil, connexion et consentement
+- [ ] T13 Synchronisation
 - [x] T07 Trajets du jour
-- [ ] T08 Build de développement (compilé sur GitHub le 11 novembre, à tester sur iPhone)
+- [ ] T08 Build de développement
 - [ ] T09 Suivi en arrière-plan
 - [ ] T10 Test batterie
 - [ ] T11 Pas
-- [ ] T12 Comptes Supabase
-- [ ] T13 Synchronisation
 - [ ] T14 Illustrations
 - [ ] T15 Vernis et retournement
 - [x] T16 Profil (pas en attente du T11)
@@ -120,15 +122,27 @@ Fini quand : les 20 marqueurs s'affichent au bon endroit.
 
 ---
 
-# Phase B : la vraie app
+# Phase B : compte et vraie app
 
-Objectif de la phase : plus besoin de garder l'app ouverte.
+Objectif de la phase : un compte obligatoire, des données sauvegardées, et plus besoin de garder l'app ouverte.
 
-## T06 Écran d'accueil et consentement
+## T12 Comptes Supabase
 
-Au premier lancement seulement : deux ou trois écrans qui expliquent le principe, le suivi continu, et que les positions restent sur le téléphone. Puis demande des autorisations. Un refus mène à un écran clair avec un bouton vers les réglages.
+Inscription et connexion par e-mail. Tables côté Supabase avec sécurité au niveau des lignes activée partout : chaque utilisateur ne lit et n'écrit que ses données. Seule la clé publique dans l'app, via variables d'environnement. Le compte est obligatoire. L'app marche sans réseau et synchronise dès qu'il revient.
 
-Fini quand : à la réinstallation, l'accueil s'affiche une fois puis plus jamais.
+Fini quand : deux comptes de test ne voient jamais les données l'un de l'autre.
+
+## T06 Écran d'accueil, connexion et consentement
+
+Au premier lancement : deux ou trois écrans qui expliquent le principe et le suivi continu. Puis création de compte ou connexion (le compte est obligatoire, voir T12). Puis demande des autorisations de localisation. Un refus mène à un écran clair avec un bouton vers les réglages. Tant qu'on n'est pas connecté, pas d'accès à l'app.
+
+Fini quand : à la réinstallation, l'accueil et la connexion s'affichent, puis plus jamais tant qu'on reste connecté.
+
+## T13 Synchronisation
+
+Envoyer les cartes débloquées et les points vers le compte dès qu'il y a du réseau, et les récupérer à la connexion sur un nouveau téléphone. Le téléphone reste la source principale.
+
+Fini quand : après réinstallation et connexion, l'album est identique.
 
 ## T07 Trajets du jour
 
@@ -162,21 +176,9 @@ Fini quand : le compteur correspond à celui de l'app Santé.
 
 ---
 
-# Phase C : compte et finitions
+# Phase C : finitions
 
-Objectif de la phase : une app propre, sauvegardée, qu'on peut montrer.
-
-## T12 Comptes Supabase
-
-Inscription et connexion par e-mail. Tables côté Supabase avec sécurité au niveau des lignes activée partout : chaque utilisateur ne lit et n'écrit que ses données. Seule la clé publique dans l'app, via variables d'environnement. L'app reste utilisable sans compte.
-
-Fini quand : deux comptes de test ne voient jamais les données l'un de l'autre.
-
-## T13 Synchronisation
-
-Envoyer les cartes débloquées et les points vers le compte dès qu'il y a du réseau, et les récupérer à la connexion sur un nouveau téléphone. Le téléphone reste la source principale.
-
-Fini quand : après réinstallation et connexion, l'album est identique.
+Objectif de la phase : une app propre qu'on peut montrer.
 
 ## T14 Illustrations
 

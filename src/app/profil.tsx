@@ -7,6 +7,7 @@ import { formaterDistance } from '@/balade/mesures';
 import { Carte } from '@/cartes/Carte';
 import { lieux, type Lieu } from '@/cartes/lieux';
 import { Ecran } from '@/components/ecran';
+import { Compte } from '@/compte/Compte';
 import { tousLesPoints } from '@/db/points';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { distanceTotale } from '@/profil/statistiques';
@@ -42,7 +43,12 @@ export default function Profil() {
 
   return (
     <Ecran titre="Profil">
-      <ScrollView contentContainerStyle={styles.contenu} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.contenu}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets // le clavier ne cache pas le champ du compte
+      >
         <View style={styles.rangee}>
           <Chiffre valeur={`${debloquees.size} / ${lieux.length}`} legende="Cartes" />
           <Chiffre valeur={formaterDistance(metres)} legende="Parcourus" />
@@ -72,6 +78,9 @@ export default function Profil() {
             ))}
           </View>
         )}
+
+        <Text style={styles.sousTitre}>Compte</Text>
+        <Compte />
       </ScrollView>
 
       {enGrand && (
