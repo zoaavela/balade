@@ -25,7 +25,7 @@ Règles pour chaque ticket : un ticket à la fois, rien en dehors de son périm�
 - [ ] T13 Synchronisation
 - [ ] T14 Illustrations
 - [ ] T15 Vernis et retournement
-- [ ] T16 Profil
+- [x] T16 Profil (pas en attente du T11)
 - [ ] T17 Finitions et essai terrain
 
 ---

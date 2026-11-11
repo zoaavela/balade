@@ -23,6 +23,14 @@ export function pointsDuJour(jour: Date = new Date()): PointDate[] {
   );
 }
 
+// Tous les points jamais enregistrés, dans l'ordre.
+export function tousLesPoints(): PointDate[] {
+  return ouvrirBase().getAllSync<PointDate>(
+    'SELECT latitude, longitude, horodatage FROM points ORDER BY horodatage',
+    [],
+  );
+}
+
 // Les jours qui ont au moins un point, du plus ancien au plus récent (à minuit, heure locale).
 export function joursAvecPoints(): Date[] {
   const lignes = ouvrirBase().getAllSync<{ jour: string }>(
