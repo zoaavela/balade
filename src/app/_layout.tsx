@@ -18,6 +18,7 @@ import { useSession } from '@/compte/useSession';
 import { ouvrirBase, utiliserCompte } from '@/db/base';
 import { InclinaisonProvider } from '@/cartes/inclinaison';
 import { DeblocageProvider } from '@/deblocage/Deblocage';
+import { chargerReseau } from '@/rues/reseau';
 import { oublierCompte, retenirCompte } from '@/suivi/enregistrer';
 import { arreterSuiviFond } from '@/suivi/tacheFond';
 import { arreterZones } from '@/suivi/zones';
@@ -26,6 +27,8 @@ import { couleurs, polices, trait } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 ouvrirBase(); // crée les tables au premier lancement
+// Réseau des rues lu en tâche de fond, sans bloquer l'affichage.
+chargerReseau().catch((err) => console.warn('Réseau des rues non chargé', err));
 
 // Icônes système iOS en attendant nos propres pictos.
 function icone(nom: SymbolViewProps['name']) {

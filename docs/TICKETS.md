@@ -30,6 +30,14 @@ Les numéros restent fixes, mais l'ordre à suivre est celui de cette liste : le
 - [x] T16 Profil
 - [ ] T17 Finitions et essai terrain
 
+Phase D, rues et carte maison (marche dans Expo Go, à faire avant T08 au choix d'Enzo) :
+
+- [x] T18 Données des rues
+- [ ] T19 Recalage sur les rues
+- [ ] T20 Carte maison
+- [ ] T21 Pourcentages de rues
+- [ ] T22 Synchroniser les rues, plus les points
+
 ---
 
 # Phase A : Expo Go, app ouverte
@@ -203,3 +211,84 @@ Fini quand : les chiffres correspondent aux données réelles.
 Icône, écran de démarrage, nom définitif si trouvé. Puis une vraie journée dans Paris pour débloquer un maximum de cartes et noter les bugs.
 
 Fini quand : la journée de test se passe sans blocage.
+
+---
+
+# Phase D : rues et carte maison
+
+Objectif de la phase : n'afficher que les rues parcourues, sur une carte dessinée par nous, sans dépendre d'Apple ni de Google.
+
+Principe décidé avec Enzo :
+- Seules les rues comptent. Une position est rattachée à la rue la plus proche. Hors des rues, elle n'est jamais affichée : soit elle sert à débloquer un lieu, soit elle est ignorée. Domicile, bureau et autres endroits privés disparaissent ainsi de la carte.
+- Les allées et chemins des parcs présents dans OpenStreetMap comptent comme des rues. Un parc sans chemin est traité comme un lieu.
+- Un seul jeu de données, embarqué dans l'app, sert au recalage, à la carte et aux pourcentages. Tout le calcul se fait sur le téléphone.
+- Mention obligatoire « © contributeurs OpenStreetMap » dans l'app (données sous licence ODbL).
+
+## T18 Données des rues
+
+Objectif : embarquer le réseau de rues de la petite couronne : Paris, Hauts-de-Seine, Seine-Saint-Denis et Val-de-Marne.
+
+À faire :
+- Un script `scripts/rues/` (Node), relançable, qui récupère les données OpenStreetMap de la zone. Source par défaut : l'extrait Geofabrik de l'Île-de-France (un fichier .osm.pbf). L'API Overpass reste en option, car elle est souvent surchargée.
+- La zone suit les limites réelles des quatre départements, pas un rectangle. Une rue est gardée si son milieu est dans un arrondissement de Paris ou une commune du 92, du 93 ou du 94, reconnus par leur code INSEE.
+- Garder les voies où l'on marche : residential, living_street, pedestrian, footway, path, steps, primary, secondary, tertiary, unclassified, cycleway. Exclure motorway, trunk et leurs bretelles (périphérique, autoroutes), les voies privées (access=private) et les allées de parking.
+- Exclure aussi les doublons de rue : trottoirs (footway=sidewalk), passages piétons (footway=crossing) et pistes cyclables dessinées à part, sauf dans les parcs et les bois où elles servent de chemins. Chaque rue n'existe qu'une fois, un seul passage la valide, à pied ou à vélo, quel que soit le côté.
+- Garder aussi, pour le dessin : la Seine et les plans d'eau, les parcs et bois, les contours des arrondissements et des communes.
+- Produire des fichiers compacts dans `assets/data/` : segments de rue (identifiant, nom, type, coordonnées simplifiées), plus un index par grille pour retrouver vite les segments proches d'un point. Viser moins de 10 Mo au total. Au-delà, découper par département et charger à la demande.
+- Charger ces fichiers au démarrage sans bloquer l'interface (expo-asset et expo-file-system, pas un gros require).
+- Écrire dans le ticket la taille obtenue et le nombre de segments.
+
+Fini quand : l'app charge le réseau en moins de deux secondes sur l'iPhone et peut répondre « quels segments à moins de 25 m de ce point ».
+
+Résultat (extrait Geofabrik Île-de-France du 14 novembre 2026) : 267 888 segments, 20 542 noms de rues, 142 zones (20 arrondissements, 36 communes du 92, 39 du 93 depuis la fusion de Saint-Denis et Pierrefitte en 2025, 47 du 94). 9,43 Mo au total : rues.bin 8,40 Mo, rues-noms.txt 0,39 Mo, fond.bin 0,64 Mo, zones.txt 3 Ko. 269 pistes cyclables gardées dans les parcs et bois, 7 501 exclues. Coordonnées précises à 0,6 m près. Relancer avec `node scripts/rues/generer.mjs`, ou `--source=overpass`.
+
+## T19 Recalage sur les rues
+
+Objectif : transformer les positions en rues parcourues.
+
+À faire :
+- Pour chaque nouveau point : chercher les segments à moins de 25 m. Choisir le plus proche en favorisant la continuité avec le segment précédent, pour ne pas sauter sur une rue parallèle. À distance presque égale, préférer une rue nommée à un chemin sans nom, et une rue à un trottoir resté dans les données.
+- Aucun segment assez proche : le point n'est jamais affiché. Il sert uniquement à vérifier le déblocage des lieux.
+- Nouvelle table `rues_parcourues` : segment_id, premiere_fois, derniere_fois, nb_passages.
+- Recaler aussi les points déjà enregistrés, une fois, au premier lancement après la mise à jour.
+- Les trajets du jour (T07) affichent désormais les segments recalés, plus les points bruts.
+- Proposition à valider par Enzo avant de coder : supprimer les points bruts du téléphone au bout de 7 jours une fois recalés.
+
+Fini quand : une marche dans le quartier s'affiche collée aux rues, et un passage chez soi ou dans un bâtiment n'apparaît nulle part.
+
+## T20 Carte maison
+
+Objectif : remplacer la carte Apple par une carte dessinée par nous, à notre style.
+
+À faire :
+- Dessin avec @shopify/react-native-skia, gestes avec react-native-gesture-handler et react-native-reanimated (installer avec `npx expo install`, versions compatibles avec Expo Go).
+- Rendu : fond crème, Seine et plans d'eau en cobalt adouci, parcs en vert bouteille pâle, rues en traits fins d'encre (plus épais pour les grands axes), rues parcourues en ocre épais par-dessus, marqueurs des lieux, point de position.
+- Pas de noms de rues pour l'instant. Seulement les noms de quartiers à faible zoom.
+- Déplacer, zoomer à deux doigts, bouton pour se recentrer.
+- Performance : ne dessiner que les segments visibles (grâce à l'index du T18), simplifier selon le zoom, masquer les petites voies à faible zoom. Objectif : fluide sur l'iPhone d'Enzo.
+- Garder l'ancienne carte Apple derrière un réglage de développement tant que la nouvelle n'est pas validée.
+
+Fini quand : Enzo navigue dans Paris sur la carte maison sans saccade et y voit ses rues parcourues.
+
+## T21 Pourcentages de rues
+
+Objectif : savoir quelle part de chaque quartier on a parcourue.
+
+À faire :
+- Pour chaque arrondissement et commune : longueur des segments parcourus sur longueur totale des segments retenus au T18.
+- Affichage dans le Profil : liste des arrondissements et communes avec leur pourcentage, le plus avancé en premier.
+
+Fini quand : les pourcentages bougent après une marche dans un arrondissement.
+
+## T22 Synchroniser les rues, plus les points
+
+Objectif : ne plus jamais envoyer de positions brutes sur le serveur.
+
+À faire :
+- Synchroniser la table `rues_parcourues` et les cartes débloquées, plus la table des points.
+- Nouvelle migration Supabase : table des rues parcourues avec sécurité au niveau des lignes, puis suppression des points bruts déjà envoyés et de leur table.
+- Mettre à jour `scripts/test-rls.mjs` pour vérifier la nouvelle table.
+- Mettre à jour l'écran d'accueil et la politique de confidentialité : seules les rues parcourues et les cartes quittent le téléphone.
+
+Fini quand : le compte Supabase ne contient plus aucune position brute, et une réinstallation retrouve les rues parcourues.
+

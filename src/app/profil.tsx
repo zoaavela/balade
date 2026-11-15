@@ -12,6 +12,7 @@ import { tousLesPoints } from '@/db/points';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { formaterPas, lirePas, type Pas } from '@/pas/pas';
 import { distanceTotale } from '@/profil/statistiques';
+import { TestReseau } from '@/rues/TestReseau';
 import { couleurs, espace, polices, trait } from '@/theme';
 
 const NB_DERNIERES = 3;
@@ -98,6 +99,8 @@ export default function Profil() {
 
         <Text style={styles.sousTitre}>Compte</Text>
         <Compte />
+
+        {__DEV__ && <TestReseau />}
       </ScrollView>
 
       {enGrand && (

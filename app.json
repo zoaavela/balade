@@ -56,7 +56,8 @@
         {
           "motionPermission": "L’app compte tes pas avec le capteur du téléphone, pour les afficher dans ton profil."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

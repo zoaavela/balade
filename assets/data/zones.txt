@@ -1,0 +1,142 @@
+arrondissement	Paris 1er Arrondissement
+arrondissement	Paris 2e Arrondissement
+arrondissement	Paris 3e Arrondissement
+arrondissement	Paris 4e Arrondissement
+arrondissement	Paris 5e Arrondissement
+arrondissement	Paris 6e Arrondissement
+arrondissement	Paris 7e Arrondissement
+arrondissement	Paris 8e Arrondissement
+arrondissement	Paris 9e Arrondissement
+arrondissement	Paris 10e Arrondissement
+arrondissement	Paris 11e Arrondissement
+arrondissement	Paris 12e Arrondissement
+arrondissement	Paris 13e Arrondissement
+arrondissement	Paris 14e Arrondissement
+arrondissement	Paris 15e Arrondissement
+arrondissement	Paris 16e Arrondissement
+arrondissement	Paris 17e Arrondissement
+arrondissement	Paris 18e Arrondissement
+arrondissement	Paris 19e Arrondissement
+arrondissement	Paris 20e Arrondissement
+commune	Ablon-sur-Seine
+commune	Alfortville
+commune	Antony
+commune	Arcueil
+commune	Asnières-sur-Seine
+commune	Aubervilliers
+commune	Aulnay-sous-Bois
+commune	Bagneux
+commune	Bagnolet
+commune	Bobigny
+commune	Bois-Colombes
+commune	Boissy-Saint-Léger
+commune	Bondy
+commune	Bonneuil-sur-Marne
+commune	Boulogne-Billancourt
+commune	Bourg-la-Reine
+commune	Bry-sur-Marne
+commune	Cachan
+commune	Champigny-sur-Marne
+commune	Charenton-le-Pont
+commune	Châtenay-Malabry
+commune	Châtillon
+commune	Chaville
+commune	Chennevières-sur-Marne
+commune	Chevilly-Larue
+commune	Choisy-le-Roi
+commune	Clamart
+commune	Clichy
+commune	Clichy-sous-Bois
+commune	Colombes
+commune	Coubron
+commune	Courbevoie
+commune	Créteil
+commune	Drancy
+commune	Dugny
+commune	Épinay-sur-Seine
+commune	Fontenay-aux-Roses
+commune	Fontenay-sous-Bois
+commune	Fresnes
+commune	Gagny
+commune	Garches
+commune	Gennevilliers
+commune	Gentilly
+commune	Gournay-sur-Marne
+commune	Issy-les-Moulineaux
+commune	Ivry-sur-Seine
+commune	Joinville-le-Pont
+commune	L'Haÿ-les-Roses
+commune	L'Île-Saint-Denis
+commune	La Courneuve
+commune	La Garenne-Colombes
+commune	La Queue-en-Brie
+commune	Le Blanc-Mesnil
+commune	Le Bourget
+commune	Le Kremlin-Bicêtre
+commune	Le Perreux-sur-Marne
+commune	Le Plessis-Robinson
+commune	Le Plessis-Trévise
+commune	Le Pré-Saint-Gervais
+commune	Le Raincy
+commune	Les Lilas
+commune	Les Pavillons-sous-Bois
+commune	Levallois-Perret
+commune	Limeil-Brévannes
+commune	Livry-Gargan
+commune	Maisons-Alfort
+commune	Malakoff
+commune	Mandres-les-Roses
+commune	Marnes-la-Coquette
+commune	Marolles-en-Brie
+commune	Meudon
+commune	Montfermeil
+commune	Montreuil
+commune	Montrouge
+commune	Nanterre
+commune	Neuilly-Plaisance
+commune	Neuilly-sur-Marne
+commune	Neuilly-sur-Seine
+commune	Nogent-sur-Marne
+commune	Noiseau
+commune	Noisy-le-Grand
+commune	Noisy-le-Sec
+commune	Orly
+commune	Ormesson-sur-Marne
+commune	Pantin
+commune	Périgny
+commune	Puteaux
+commune	Romainville
+commune	Rosny-sous-Bois
+commune	Rueil-Malmaison
+commune	Rungis
+commune	Saint-Cloud
+commune	Saint-Denis
+commune	Saint-Mandé
+commune	Saint-Maur-des-Fossés
+commune	Saint-Maurice
+commune	Saint-Ouen-sur-Seine
+commune	Santeny
+commune	Sceaux
+commune	Sevran
+commune	Sèvres
+commune	Stains
+commune	Sucy-en-Brie
+commune	Suresnes
+commune	Thiais
+commune	Tremblay-en-France
+commune	Valenton
+commune	Vanves
+commune	Vaucresson
+commune	Vaujours
+commune	Ville-d'Avray
+commune	Villecresnes
+commune	Villejuif
+commune	Villemomble
+commune	Villeneuve-la-Garenne
+commune	Villeneuve-le-Roi
+commune	Villeneuve-Saint-Georges
+commune	Villepinte
+commune	Villetaneuse
+commune	Villiers-sur-Marne
+commune	Vincennes
+commune	Vitry-sur-Seine
