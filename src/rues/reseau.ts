@@ -88,8 +88,8 @@ async function charger(): Promise<Reseau> {
 
   const r = lireRues(bRues);
   const fond = lireFond(bFond);
-  const noms = tNoms.split('\n');
-  const zones = tZones.split('\n').filter(Boolean).map((ligne) => {
+  const noms = tNoms.split(/\r?\n/);
+  const zones = tZones.split(/\r?\n/).filter(Boolean).map((ligne) => {
     const [type, nom] = ligne.split('\t');
     return { type: type as Zone['type'], nom };
   });
