@@ -423,6 +423,13 @@ Maquette validée par Enzo : `docs/maquettes/profil-defis.html`, écran de gauch
 
 Fini quand : Enzo change sa photo, sa bio et son username, et deux comptes de test ne peuvent pas modifier le profil l'un de l'autre.
 
+Fait :
+- Migration `supabase/migrations/0002_profils.sql` : règles vérifiées par le serveur (format, unicité sans majuscules, mots réservés et tout nom contenant « balade » ou « admin », 30 jours, bio). Le premier choix ne déclenche pas les 30 jours. L'app ne peut écrire que username et bio : photo_cle n'est écrit que par la fonction.
+- Username obligatoire après la connexion (choix d'Enzo). Retenu sur le téléphone, et sans réseau l'app laisse entrer.
+- Photo : bucket R2 privé, liens signés par `supabase/functions/photo-profil` (envoi 5 minutes, lecture une heure). Recadrée en 512 px, réencodée en JPEG, métadonnées retirées par l'app puis revérifiées par la fonction, qui supprime tout fichier non conforme. Nom aléatoire, sans lien avec le compte.
+- Mise en place à faire par Enzo : docs/SUPABASE.md, étapes 6 à 8.
+- Profil d'après docs/maquettes/profil-defis.html : avatar, @username, bio, « Modifier le profil », chiffre Défis. Pas encore « Rues » ni « Tes quartiers » (T21), ni « Derniers timbres » (T24).
+
 ## T30 Les trois vues de l'accueil
 
 À faire après T20 (carte maison).

@@ -14,6 +14,7 @@ import { Fragment, useEffect } from 'react';
 import { Accueil } from '@/accueil/Accueil';
 import { useAccueilVu } from '@/accueil/accueilVu';
 import { EcranConnexion } from '@/compte/EcranConnexion';
+import { ProfilRequis } from '@/compte/ProfilRequis';
 import { useSession } from '@/compte/useSession';
 import { ouvrirBase, utiliserCompte } from '@/db/base';
 import { InclinaisonProvider } from '@/cartes/inclinaison';
@@ -94,6 +95,9 @@ export default function RootLayout() {
 
   return (
     <Fragment key={userId}>
+      <StatusBar style="dark" />
+      {/* Le username d'abord (T29), puis l'app. */}
+      <ProfilRequis userId={userId}>
       <InclinaisonProvider>
         <DeblocageProvider>
       <SynchroAuto userId={userId} />
@@ -119,6 +123,7 @@ export default function RootLayout() {
       </Tabs>
         </DeblocageProvider>
       </InclinaisonProvider>
+      </ProfilRequis>
     </Fragment>
   );
 }

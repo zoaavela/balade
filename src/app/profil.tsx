@@ -10,7 +10,9 @@ import { Ecran } from '@/components/ecran';
 import { Compte } from '@/compte/Compte';
 import { distanceParcourue } from '@/db/rues';
 import { useDeblocage } from '@/deblocage/Deblocage';
+import { defis, estTermine } from '@/defis/defis';
 import { formaterPas, lirePas, type Pas } from '@/pas/pas';
+import { EnteteProfil } from '@/profil/EnteteProfil';
 import { TestReseau } from '@/rues/TestReseau';
 import { couleurs, espace, polices, trait } from '@/theme';
 
@@ -53,19 +55,20 @@ export default function Profil() {
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets // le clavier ne cache pas le champ du compte
       >
+        <EnteteProfil />
+
         <View style={styles.rangee}>
           <Chiffre valeur={`${debloquees.size} / ${lieux.length}`} legende="Cartes" />
-          <Chiffre valeur={formaterDistance(metres)} legende="Parcourus" />
+          <Chiffre
+            valeur={`${defis.filter((d) => estTermine(d, debloquees)).length} / ${defis.length}`}
+            legende="Défis"
+          />
         </View>
         <View style={styles.rangee}>
+          <Chiffre valeur={formaterDistance(metres)} legende="Parcourus" />
           <Chiffre
             valeur={pas ? formaterPas(pas.aujourdhui) : pas === null ? 'Indisponible' : '…'}
-            legende="Pas aujourd'hui"
-            attente={!pas}
-          />
-          <Chiffre
-            valeur={pas ? formaterPas(pas.total) : pas === null ? 'Indisponible' : '…'}
-            legende="Pas au total"
+            legende={pas ? `Pas aujourd'hui, ${formaterPas(pas.total)} au total` : "Pas aujourd'hui"}
             attente={!pas}
           />
         </View>
