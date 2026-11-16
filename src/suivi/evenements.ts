@@ -1,4 +1,5 @@
 import type { Lieu } from '@/cartes/lieux';
+import type { Defi } from '@/defis/defis';
 import type { PointDate } from '@/db/points';
 
 // Petits messages entre le suivi (qui peut tourner en arrière-plan, sans écran)
@@ -21,6 +22,20 @@ export function surNouvellesCartes(f: (cartes: { lieux: Lieu[]; date: Date }) =>
   return () => {
     ecouteursCartes.delete(f);
   };
+}
+
+// Défis terminés par les derniers déblocages (T27), pour l'écran de célébration.
+const ecouteursDefis: Set<(defis: Defi[]) => void> = new Set();
+
+export function surDefisTermines(f: (defis: Defi[]) => void) {
+  ecouteursDefis.add(f);
+  return () => {
+    ecouteursDefis.delete(f);
+  };
+}
+
+export function annoncerDefis(defis: Defi[]) {
+  ecouteursDefis.forEach((f) => f(defis));
 }
 
 // Nouveaux passages sur des rues (T19) : la carte relit le tracé du jour.

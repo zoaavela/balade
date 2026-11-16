@@ -16,7 +16,7 @@ const derniereVibration = new Map<string, number>();
 export function signalerSecretsProches(points: Point[], debloques: ReadonlySet<string>) {
   // Une vibration ne se sent que téléphone en main, app ouverte.
   if (AppState.currentState !== 'active') return;
-  const reveles = secretsReveles();
+  const reveles = secretsReveles(debloques);
   const maintenant = Date.now();
   let vibrer = false;
   for (const lieu of lieuxPlaces) {

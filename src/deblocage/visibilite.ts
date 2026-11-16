@@ -1,5 +1,6 @@
 import { distanceEntre, type Point } from '@/balade/mesures';
 import type { LieuPlace } from '@/cartes/lieux';
+import { secretsRevelesPar } from '@/defis/defis';
 
 // Ce que la carte montre d'un lieu (T26), selon sa rareté :
 // - visible et légendaire : le marqueur normal ;
@@ -15,9 +16,9 @@ export type Affichage =
 const RAYON_INDICE_M = 150; // 300 m de large
 const MARGE_INDICE_M = 50; // autour d'un grand lieu, la zone le dépasse un peu
 
-// Les secrets révélés par un défi terminé. Les défis arrivent au T27 : vide d'ici là.
-export function secretsReveles(): ReadonlySet<string> {
-  return new Set();
+// Les secrets révélés par un défi terminé (T27), d'après les cartes débloquées.
+export function secretsReveles(debloquees: { has(id: string): boolean }): ReadonlySet<string> {
+  return secretsRevelesPar(debloquees);
 }
 
 export function affichageLieu(

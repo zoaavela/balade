@@ -388,6 +388,13 @@ Maquette validée par Enzo : `docs/maquettes/profil-defis.html` (à ouvrir dans 
 
 Fini quand : terminer Voyage en train en simulation révèle l'ancienne gare d'Ornano et la rue Crémieux.
 
+Fait :
+- Données dans `src/defis/defis.ts`. Avancement et fin se déduisent des cartes débloquées : rien de plus à enregistrer ni à synchroniser, un nouveau téléphone retrouve ses défis. Date de fin : celle du dernier lieu.
+- Onglet d'après docs/maquettes/profil-defis.html. Icônes Tabler (`@tabler/icons-react-native` 3.50.0), importées une par une pour ne pas embarquer les 6 000.
+- Provisoire en attendant T24 et T25 : la célébration montre l'icône du défi en grand, et toucher un défi ouvre une page simple de ses emplacements.
+- Un secret révélé devient un indice sur la carte, sans devinette. L'ancienne gare d'Ornano, sans position, n'apparaît pas sur la carte.
+- Châteaux : rien à révéler, Versailles, Fontainebleau et Vaux-le-Vicomte sont déjà visibles. La célébration les cite.
+
 ## T28 Notifications des défis
 
 - Notifications locales (expo-notifications) : avancée d'un défi (« Voyage en train : 3 / 7. Gare de l'Est ajoutée. ») et défi terminé.

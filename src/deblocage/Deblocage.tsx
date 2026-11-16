@@ -12,18 +12,22 @@ import type { Lieu } from '@/cartes/lieux';
 import { cartesDebloquees } from '@/db/cartes';
 import { enregistrerDeblocages } from '@/suivi/enregistrer';
 import { dansExpoGo } from '@/suivi/environnement';
-import { surNouvellesCartes } from '@/suivi/evenements';
+import { surDefisTermines, surNouvellesCartes } from '@/suivi/evenements';
 import { surveillerLieux } from '@/suivi/zones';
 
 import { lieuxAtteints } from './lieuxAtteints';
 import { signalerSecretsProches } from './secretsProches';
 import { NouvelleCarte } from './NouvelleCarte';
+import { DefiTermine } from '@/defis/DefiTermine';
+import type { Defi } from '@/defis/defis';
 
 type Valeur = {
   debloquees: Map<string, Date>; // lieu_id et date de déblocage
   traiterPoint: (point: Point) => void; // position simulée (menu de développement)
   rafraichir: () => void; // relit les cartes depuis la base (après une synchronisation)
 };
+
+type AMontrer = { genre: 'carte'; lieu: Lieu; date: Date } | { genre: 'defi'; defi: Defi };
 
 const Contexte = createContext<Valeur | null>(null);
 
@@ -32,14 +36,22 @@ const Contexte = createContext<Valeur | null>(null);
 // un par un et on tient à jour la liste des cartes pour les écrans.
 export function DeblocageProvider({ children }: { children: ReactNode }) {
   const [debloquees, setDebloquees] = useState(() => cartesDebloquees());
-  const [aMontrer, setAMontrer] = useState<{ lieu: Lieu; date: Date }[]>([]);
+  // File d'attente des écrans plein écran : les nouvelles cartes, puis les défis terminés.
+  const [aMontrer, setAMontrer] = useState<AMontrer[]>([]);
 
   useEffect(
     () =>
       surNouvellesCartes(({ lieux, date }) => {
         setDebloquees(cartesDebloquees());
-        setAMontrer((file) => [...file, ...lieux.map((lieu) => ({ lieu, date }))]);
+        setAMontrer((file) => [...file, ...lieux.map((lieu) => ({ genre: 'carte' as const, lieu, date }))]);
       }),
+    [],
+  );
+  useEffect(
+    () =>
+      surDefisTermines((termines) =>
+        setAMontrer((file) => [...file, ...termines.map((defi) => ({ genre: 'defi' as const, defi }))]),
+      ),
     [],
   );
 
@@ -60,11 +72,19 @@ export function DeblocageProvider({ children }: { children: ReactNode }) {
   return (
     <Contexte.Provider value={{ debloquees, traiterPoint, rafraichir }}>
       {children}
-      {enCours && (
+      {enCours?.genre === 'carte' && (
         <NouvelleCarte
           key={enCours.lieu.id}
           lieu={enCours.lieu}
           date={enCours.date}
+          encoreApres={aMontrer.length - 1}
+          onFermer={() => setAMontrer((file) => file.slice(1))}
+        />
+      )}
+      {enCours?.genre === 'defi' && (
+        <DefiTermine
+          key={enCours.defi.id}
+          defi={enCours.defi}
           encoreApres={aMontrer.length - 1}
           onFermer={() => setAMontrer((file) => file.slice(1))}
         />

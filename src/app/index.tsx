@@ -57,7 +57,7 @@ export default function Carte() {
   const [choisi, setChoisi] = useState<LieuPlace | null>(null);
   // Ce que la carte montre de chaque lieu : marqueur, zone d'indice ou rien (T26).
   const affichages = useMemo(() => {
-    const reveles = secretsReveles();
+    const reveles = secretsReveles(debloquees);
     return lieuxPlaces.map((lieu) => ({
       lieu,
       affichage: affichageLieu(lieu, debloquees.has(lieu.id), reveles),
@@ -301,7 +301,10 @@ export default function Carte() {
               <Text style={[styles.infoCategorie, { color: categories[choisi.categorie].bordure }]}>
                 Lieu à trouver · {categories[choisi.categorie].nom}
               </Text>
-              <Text style={styles.infoIndice}>{choisi.indice}</Text>
+              <Text style={styles.infoIndice}>
+                {/* Un secret révélé par un défi n'a pas de devinette : la zone suffit. */}
+                {choisi.indice || 'Révélé par un défi terminé. Il se cache dans cette zone.'}
+              </Text>
             </View>
           )}
 

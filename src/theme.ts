@@ -10,6 +10,7 @@ export const couleurs = {
   vertBouteille: '#4F8A62', // mystères
   or: '#D6AE4E', // légendaire, toujours posé sur l'encre
   encreDouce: 'rgba(33, 29, 26, 0.45)', // texte secondaire, onglets inactifs
+  papier: '#FBF6EC', // crème plus clair : fond des barres et des cases (maquette profil-defis)
 } as const;
 
 export const polices = {

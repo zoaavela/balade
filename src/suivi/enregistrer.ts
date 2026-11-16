@@ -11,7 +11,9 @@ import { lieuxAtteints } from '@/deblocage/lieuxAtteints';
 import { signalerSecretsProches } from '@/deblocage/secretsProches';
 import { recalerEnAttente } from '@/rues/recaler';
 
-import { annoncerCartes, annoncerPoints } from './evenements';
+import { defis, estTermine } from '@/defis/defis';
+
+import { annoncerCartes, annoncerDefis, annoncerPoints } from './evenements';
 import { notifierNouvelleCarte } from './notifications';
 
 // Le cœur du suivi, appelé pour chaque lot de positions, que l'app soit à l'écran ou non :
@@ -92,10 +94,15 @@ export function traiterEntreeZone(lieuId: string) {
 export function enregistrerDeblocages(candidats: Lieu[]): Lieu[] {
   if (candidats.length === 0) return [];
   const date = new Date();
+  const avant = new Set(cartesDebloquees().keys());
   const nouveaux = candidats.filter((lieu) => debloquer(lieu.id, date));
   if (nouveaux.length === 0) return [];
+  // Les défis que ces cartes viennent de terminer, montrés après les cartes.
+  const apres = new Set([...avant, ...nouveaux.map((l) => l.id)]);
+  const termines = defis.filter((d) => !estTermine(d, avant) && estTermine(d, apres));
   // Les écrans affichent la carte à la prochaine ouverture s'ils sont en mémoire.
   const ecranPret = annoncerCartes(nouveaux, date);
+  if (termines.length > 0) annoncerDefis(termines);
   // Téléphone dans la poche : on prévient aussi par une notification.
   if (!ecranPret || AppState.currentState !== 'active') {
     nouveaux.forEach((lieu) => notifierNouvelleCarte(lieu));
