@@ -18,12 +18,15 @@ import { effacerBaseCompte } from '@/db/base';
 import { CarteEnGrand } from '@/album/CarteEnGrand';
 import { distanceEntre, formaterDistance, type Point } from '@/balade/mesures';
 import { MarqueurLieu } from '@/carte/MarqueurLieu';
+import { ZoneIndice } from '@/carte/ZoneIndice';
+import { categories } from '@/cartes/categories';
 
 import { lieuxPlaces, type LieuPlace } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
 import { Ecran } from '@/components/ecran';
 import { joursAvecPassages, passagesDuJour } from '@/db/rues';
 import { useDeblocage } from '@/deblocage/Deblocage';
+import { affichageLieu, indiceTouche, secretsReveles, type Affichage } from '@/deblocage/visibilite';
 import { useSuiviPosition } from '@/suivi/useSuiviPosition';
 import { debutDuJour, nommerJour } from '@/trajets/jours';
 import { tracerTrajets, useReseau, useVersionPassages } from '@/trajets/tracer';
@@ -47,6 +50,24 @@ export default function Carte() {
   const points = useSuiviPosition(etat.type === 'pret');
   const [menuSimulation, setMenuSimulation] = useState(false);
   const [choisi, setChoisi] = useState<LieuPlace | null>(null);
+  // Ce que la carte montre de chaque lieu : marqueur, zone d'indice ou rien (T26).
+  const affichages = useMemo(() => {
+    const reveles = secretsReveles();
+    return lieuxPlaces.map((lieu) => ({
+      lieu,
+      affichage: affichageLieu(lieu, debloquees.has(lieu.id), reveles),
+    }));
+  }, [debloquees]);
+  const zonesIndices = useMemo(
+    () =>
+      affichages.flatMap(({ lieu, affichage }) =>
+        affichage.genre === 'indice' ? [{ lieu, centre: affichage.centre, rayon_m: affichage.rayon_m }] : [],
+      ),
+    [affichages],
+  );
+  const affichageChoisi: Affichage | null = choisi
+    ? (affichages.find((a) => a.lieu.id === choisi.id)?.affichage ?? null)
+    : null;
   const [maPosition, setMaPosition] = useState<Point | null>(null);
   // Sur iOS, toucher un marqueur peut aussi toucher la carte dessous : on ignore ce second tap.
   const dernierTapMarqueur = useRef(0);
@@ -174,8 +195,11 @@ export default function Carte() {
               const c = e.nativeEvent.coordinate;
               if (c) setMaPosition({ latitude: c.latitude, longitude: c.longitude });
             }}
-            onPress={() => {
-              if (Date.now() - dernierTapMarqueur.current > 400) setChoisi(null);
+            onPress={(e) => {
+              if (Date.now() - dernierTapMarqueur.current <= 400) return;
+              // Toucher une zone d'indice montre sa devinette, ailleurs on ferme.
+              const zone = indiceTouche(zonesIndices, e.nativeEvent.coordinate);
+              setChoisi(zone ? zone.lieu : null);
             }}
             showsPointsOfInterests={false}
             showsCompass={false}
@@ -192,17 +216,32 @@ export default function Carte() {
                 />
               )),
             )}
-            {lieuxPlaces.map((lieu) => (
-              <MarqueurLieu
-                key={lieu.id}
-                lieu={lieu}
-                debloque={debloquees.has(lieu.id)}
-                onPress={() => {
-                  dernierTapMarqueur.current = Date.now();
-                  setChoisi(lieu);
-                }}
-              />
-            ))}
+            {affichages.map(({ lieu, affichage }) => {
+              const toucher = () => {
+                dernierTapMarqueur.current = Date.now();
+                setChoisi(lieu);
+              };
+              if (affichage.genre === 'cache') return null;
+              if (affichage.genre === 'indice') {
+                return (
+                  <ZoneIndice
+                    key={`${lieu.id}-indice`}
+                    lieu={lieu}
+                    centre={affichage.centre}
+                    rayon_m={affichage.rayon_m}
+                    onPress={toucher}
+                  />
+                );
+              }
+              return (
+                <MarqueurLieu
+                  key={lieu.id}
+                  lieu={lieu}
+                  debloque={debloquees.has(lieu.id)}
+                  onPress={toucher}
+                />
+              );
+            })}
           </MapView>
 
           <View style={styles.selecteur}>
@@ -226,7 +265,16 @@ export default function Carte() {
             />
           </View>
 
-          {choisi && !debloquees.has(choisi.id) && (
+          {choisi && !debloquees.has(choisi.id) && affichageChoisi?.genre === 'indice' && (
+            <View style={styles.infoLieu}>
+              <Text style={[styles.infoCategorie, { color: categories[choisi.categorie].bordure }]}>
+                Lieu à trouver · {categories[choisi.categorie].nom}
+              </Text>
+              <Text style={styles.infoIndice}>{choisi.indice}</Text>
+            </View>
+          )}
+
+          {choisi && !debloquees.has(choisi.id) && affichageChoisi?.genre === 'marqueur' && (
             <View style={styles.infoLieu}>
               <Text style={styles.infoNom} numberOfLines={2}>
                 {choisi.nom}
@@ -316,18 +364,28 @@ function MenuSimulation({ onFermer }: { onFermer: () => void }) {
     <View style={styles.menu}>
       <Text style={styles.sousTitre}>Simuler une position</Text>
       <ScrollView contentContainerStyle={styles.menuListe}>
-        {lieuxPlaces.map((lieu) => (
-          <Pressable
-            key={lieu.id}
-            style={styles.menuLigne}
-            onPress={() => {
-              onFermer();
-              traiterPoint({ latitude: lieu.emplacement.latitude, longitude: lieu.emplacement.longitude });
-            }}>
-            <Text style={styles.texte}>{lieu.nom}</Text>
-            {debloquees.has(lieu.id) && <Text style={styles.menuDeja}>débloqué</Text>}
-          </Pressable>
-        ))}
+        {lieuxPlaces.flatMap((lieu) => {
+          const e = lieu.emplacement;
+          const ligne = (cle: string, titre: string, point: Point) => (
+            <Pressable
+              key={cle}
+              style={styles.menuLigne}
+              onPress={() => {
+                onFermer();
+                traiterPoint(point);
+              }}>
+              <Text style={styles.texte}>{titre}</Text>
+              {debloquees.has(lieu.id) && <Text style={styles.menuDeja}>débloqué</Text>}
+            </Pressable>
+          );
+          const lignes = [ligne(lieu.id, lieu.nom, e)];
+          // Un secret : aussi un point juste en dehors, pour sentir la vibration sans le débloquer.
+          if (lieu.rarete === 'secret') {
+            const nord = { latitude: e.latitude + (e.rayon_m + 100) / 111_195, longitude: e.longitude };
+            lignes.push(ligne(`${lieu.id}-pres`, `Près de : ${lieu.nom}`, nord));
+          }
+          return lignes;
+        })}
       </ScrollView>
       <Bouton
         titre="Simuler un nouveau téléphone"
@@ -455,6 +513,18 @@ const styles = StyleSheet.create({
   infoNom: {
     fontFamily: polices.extraGras,
     fontSize: 22,
+    color: couleurs.encre,
+  },
+  infoCategorie: {
+    fontFamily: polices.gras,
+    fontSize: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  infoIndice: {
+    fontFamily: polices.moyen,
+    fontSize: 18,
+    lineHeight: 24,
     color: couleurs.encre,
   },
   infoDistance: {

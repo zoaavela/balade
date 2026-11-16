@@ -16,6 +16,7 @@ import { surNouvellesCartes } from '@/suivi/evenements';
 import { surveillerLieux } from '@/suivi/zones';
 
 import { lieuxAtteints } from './lieuxAtteints';
+import { signalerSecretsProches } from './secretsProches';
 import { NouvelleCarte } from './NouvelleCarte';
 
 type Valeur = {
@@ -49,6 +50,7 @@ export function DeblocageProvider({ children }: { children: ReactNode }) {
 
   const traiterPoint = useCallback((point: Point) => {
     enregistrerDeblocages(lieuxAtteints(point, new Set(cartesDebloquees().keys())));
+    signalerSecretsProches([point], new Set(cartesDebloquees().keys()));
   }, []);
 
   const rafraichir = useCallback(() => setDebloquees(cartesDebloquees()), []);

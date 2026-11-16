@@ -8,6 +8,7 @@ import { cartesDebloquees, debloquer } from '@/db/cartes';
 import { ajouterPoint, type PointDate } from '@/db/points';
 import { ecrireReglage, effacerReglage, lireReglage } from '@/db/reglages';
 import { lieuxAtteints } from '@/deblocage/lieuxAtteints';
+import { signalerSecretsProches } from '@/deblocage/secretsProches';
 import { recalerEnAttente } from '@/rues/recaler';
 
 import { annoncerCartes, annoncerPoints } from './evenements';
@@ -74,6 +75,7 @@ export function traiterPositions(positions: LocationObject[]) {
     for (const lieu of lieuxAtteints(point, debloques)) atteints.set(lieu.id, lieu);
   }
   enregistrerDeblocages([...atteints.values()]);
+  signalerSecretsProches(nouveaux, new Set(cartesDebloquees().keys()));
 }
 
 // Appelé quand iOS signale l'entrée dans la zone d'un lieu (voir zones.ts).

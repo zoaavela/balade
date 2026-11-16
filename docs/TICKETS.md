@@ -364,6 +364,14 @@ Fini quand : l'album reflète exactement les lieux débloqués et se lit comme u
 
 Fini quand : chaque niveau se comporte comme décrit en simulation.
 
+Fait :
+- Règle dans `src/deblocage/visibilite.ts`. Un lieu débloqué garde toujours son marqueur.
+- Zone d'indice : 150 m de rayon (plus pour un grand lieu), centre décalé de 26 m à un peu plus de la moitié du rayon, toujours le même pour un lieu. Toucher la zone ou le « ? » montre la devinette, jamais le nom.
+- Vibration des secrets comptée depuis le bord du lieu, app ouverte seulement. Le délai d'une heure est gardé en mémoire : il repart à zéro si l'app est relancée.
+- Secrets révélés : `secretsReveles()` est vide en attendant les défis (T27).
+- Menu de simulation : une ligne « Près de » par secret, à 100 m du bord, pour sentir la vibration sans débloquer.
+- Pas fait ici : timbre grand format des légendaires (T24), validation par photo du billet (plus tard).
+
 ## T27 Les défis
 
 - Les 13 défis de docs/LIEUX.md, dans un fichier de données.
@@ -371,6 +379,12 @@ Fini quand : chaque niveau se comporte comme décrit en simulation.
 - Une icône par défi, dessinée simple dans le style de l'app (trait d'encre, une couleur).
 - Défi terminé : écran de célébration, timbre spécial, et révélation des secrets liés.
 - Les défis basés sur les rues (Monopoly, bestiaire, escargot…) viendront après T19, ne pas les coder ici.
+
+Maquette validée par Enzo : `docs/maquettes/profil-defis.html` (à ouvrir dans un navigateur), écran de droite.
+- Titre « Défis » en très gros, puis « X terminés sur 13 ».
+- Une ligne par défi, séparée par un trait d'encre : icône carrée (contour encre, fond à la couleur de la catégorie), titre, avancement « 3 / 5 » à droite, une ligne de récompense (« Révèle un lieu secret », « Timbre spécial », « Terminé. 2 lieux secrets révélés »), barre d'avancement contour encre remplie de la couleur.
+- Défi terminé : icône et barre en or. Défi pas commencé : fond crème et cadenas.
+- Icônes : Tabler en contour (train, pont, arbres, ballon…), via une bibliothèque compatible Expo Go.
 
 Fini quand : terminer Voyage en train en simulation révèle l'ancienne gare d'Ornano et la rue Crémieux.
 
@@ -390,6 +404,15 @@ Fini quand : en simulation, l'app ouverte en arrière-plan, la notification arri
 - Photo de profil stockée sur Cloudflare R2. Aucune clé R2 dans l'app : une fonction Supabase vérifie la session et renvoie un lien d'envoi signé et temporaire. Image redimensionnée en 512 px, JPEG ou WebP, 2 Mo maximum, nom de fichier aléatoire.
 - Supprimer toutes les métadonnées de la photo avant l'envoi, en particulier la position GPS, et le revérifier côté serveur.
 - Sécurité au niveau des lignes : chacun ne modifie que son profil.
+
+Maquette validée par Enzo : `docs/maquettes/profil-defis.html`, écran de gauche.
+- Titre « Profil » et icône réglages en haut à droite.
+- Photo ronde 76 px, contour encre, initiale sur fond ocre si pas de photo, petit bouton appareil photo en bas à droite.
+- @username en gros, bio en dessous.
+- Quatre chiffres en grille 2 × 2 dans des encadrés crème clair : Timbres « 23 / 100 », Défis « 2 / 13 », Kilomètres, Rues.
+- « Derniers timbres » : les quatre derniers, petits, perforés, légèrement de travers, à leur format réel.
+- « Tes quartiers » : les trois communes ou arrondissements les plus parcourus, avec pourcentage et barre ocre (dépend du T21, afficher la section seulement quand il est fait).
+- Un seul bouton plein encre : « Modifier le profil ».
 
 Fini quand : Enzo change sa photo, sa bio et son username, et deux comptes de test ne peuvent pas modifier le profil l'un de l'autre.
 
