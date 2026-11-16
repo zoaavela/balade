@@ -1,14 +1,15 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 
-import { lieux } from '@/cartes/lieux';
+import { lieuxPlaces } from '@/cartes/lieux';
 
 import { traiterEntreeZone } from './enregistrer';
 
 // Zones surveillées par iOS autour des lieux pas encore débloqués. iOS réveille l'app quand
 // on entre dans l'une d'elles, même si elle a été fermée de force et que le GPS ne tourne plus.
 // Très économe : c'est le téléphone qui surveille, avec le Wi-Fi et les antennes.
-// iOS limite à 20 zones par app, c'est pile le nombre de lieux du MVP.
+// iOS limite à 20 zones par app : pour l'instant, les 20 premiers lieux restants (à revoir au T09,
+// les 20 plus proches seraient plus utiles).
 
 export const TACHE_ZONES = 'balade-lieux';
 
@@ -30,7 +31,7 @@ export async function surveillerLieux(debloquees: Set<string>) {
   try {
     const { status } = await Location.getBackgroundPermissionsAsync();
     if (status !== 'granted') return;
-    const restants = lieux.filter((l) => !debloquees.has(l.id)).slice(0, ZONES_MAX);
+    const restants = lieuxPlaces.filter((l) => !debloquees.has(l.id)).slice(0, ZONES_MAX);
     if (restants.length === 0) {
       await arreterZones();
       return;
@@ -39,9 +40,9 @@ export async function surveillerLieux(debloquees: Set<string>) {
       TACHE_ZONES,
       restants.map((l) => ({
         identifier: l.id,
-        latitude: l.latitude,
-        longitude: l.longitude,
-        radius: Math.max(l.rayon_m, RAYON_MIN),
+        latitude: l.emplacement.latitude,
+        longitude: l.emplacement.longitude,
+        radius: Math.max(l.emplacement.rayon_m, RAYON_MIN),
         notifyOnEnter: true,
         notifyOnExit: false,
       })),

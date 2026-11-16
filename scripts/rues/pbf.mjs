@@ -142,19 +142,33 @@ function lireBloc(buf, rappels) {
   }
 }
 
-// Les étiquettes des noeuds ne nous servent pas : seules les positions comptent.
+// Les étiquettes des noeuds ne sont décodées que si le rappel en demande
+// (quatrième paramètre) : pour les rues, seules les positions comptent.
 function lireNoeudsDenses(l, zone, textes, gran, decLat, decLon, rappel) {
+  const avecTags = rappel.length >= 4;
   const s = new Lecteur(l.buf, zone[0], zone[1]);
-  let ids = [], lats = [], lons = [];
+  let ids = [], lats = [], lons = [], kv = [];
   while (!s.fini()) {
     const [c, fil] = s.cle();
     if (c === 1) ids = s.compacte(s.octets(), true, true);
     else if (c === 8) lats = s.compacte(s.octets(), true, true);
     else if (c === 9) lons = s.compacte(s.octets(), true, true);
+    else if (c === 10 && avecTags) kv = s.compacte(s.octets(), false, false);
     else s.sauter(fil);
   }
+  let k = 0;
   for (let i = 0; i < ids.length; i++) {
-    rappel(ids[i], (decLat + gran * lats[i]) * 1e-9, (decLon + gran * lons[i]) * 1e-9);
+    let tags;
+    if (avecTags) {
+      // Clés et valeurs à la suite, un 0 termine chaque noeud.
+      tags = {};
+      if (kv.length) {
+        const t = textes();
+        while (kv[k] !== 0 && k < kv.length) { tags[t[kv[k]]] = t[kv[k + 1]]; k += 2; }
+        k++;
+      }
+    }
+    rappel(ids[i], (decLat + gran * lats[i]) * 1e-9, (decLon + gran * lons[i]) * 1e-9, tags);
   }
 }
 

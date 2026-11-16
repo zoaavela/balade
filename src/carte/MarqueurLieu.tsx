@@ -2,11 +2,11 @@ import { StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 
 import { categories } from '@/cartes/categories';
-import type { Lieu } from '@/cartes/lieux';
+import type { LieuPlace } from '@/cartes/lieux';
 import { couleurs, trait } from '@/theme';
 
 type Props = {
-  lieu: Lieu;
+  lieu: LieuPlace;
   debloque: boolean;
   onPress: () => void;
 };
@@ -21,7 +21,7 @@ export function MarqueurLieu({ lieu, debloque, onPress }: Props) {
     <Marker
       // La clé change au déblocage : iOS redessine alors la pastille, pleine.
       key={`${lieu.id}-${debloque}`}
-      coordinate={{ latitude: lieu.latitude, longitude: lieu.longitude }}
+      coordinate={{ latitude: lieu.emplacement.latitude, longitude: lieu.emplacement.longitude }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={false}
       onPress={onPress}

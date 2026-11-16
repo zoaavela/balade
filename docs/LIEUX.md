@@ -156,4 +156,4 @@ Le point zéro des routes de France n'est révélé par aucun défi : on le trou
 | 097 | provins | Cité médiévale de Provins | légendaire | Provins | légendaire | grand |  |  |
 | 098 | desert-de-retz | Désert de Retz | légendaire | Chambourcy | légendaire | grand |  |  |
 | 099 | auvers-sur-oise | Auvers-sur-Oise | légendaire | Auvers-sur-Oise | légendaire | grand |  |  |
-| 100 | station-fantome | Station fantôme | légendaire | Paris | légendaire | grand |  |  |
+| 100 | station-fantome | Station fantôme | légendaire | Paris 6e (Croix-Rouge, choisie le 16 novembre 2026) | légendaire | grand |  |  |

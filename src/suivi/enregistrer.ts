@@ -2,7 +2,7 @@ import type { LocationObject } from 'expo-location';
 import { AppState } from 'react-native';
 
 import { distanceEntre, type Point } from '@/balade/mesures';
-import { lieux, type Lieu } from '@/cartes/lieux';
+import { lieuxPlaces, type Lieu } from '@/cartes/lieux';
 import { baseCompte, utiliserCompte } from '@/db/base';
 import { cartesDebloquees, debloquer } from '@/db/cartes';
 import { ajouterPoint, type PointDate } from '@/db/points';
@@ -79,8 +79,10 @@ export function traiterPositions(positions: LocationObject[]) {
 // Appelé quand iOS signale l'entrée dans la zone d'un lieu (voir zones.ts).
 export function traiterEntreeZone(lieuId: string) {
   if (!ouvrirCompteActif()) return;
-  const lieu = lieux.find((l) => l.id === lieuId);
-  if (lieu) enregistrerDeblocages([lieu]);
+  const lieu = lieuxPlaces.find((l) => l.id === lieuId);
+  // Avec un contour réel, le cercle surveillé par iOS est plus large que le lieu :
+  // c'est le suivi GPS qui débloquera, une fois vraiment dedans.
+  if (lieu && !lieu.emplacement.contour) enregistrerDeblocages([lieu]);
 }
 
 // Écrit les déblocages, puis les montre : écran « Nouvelle carte » si l'app est ouverte,

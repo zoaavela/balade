@@ -40,7 +40,7 @@ Phase D, rues et carte maison (marche dans Expo Go, à faire avant T08 au choix 
 
 Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 novembre 2026) :
 
-- [ ] T23 Les 100 lieux
+- [x] T23 Les 100 lieux
 - [ ] T24 Les timbres
 - [ ] T25 L'album en carnet de timbres
 - [ ] T26 Visibilité : visibles, indices, secrets, légendaires
@@ -321,6 +321,18 @@ Objectif : une interface complète et belle, testable depuis chez soi avec le me
 - Les anecdotes restent vides quand on n'en a pas de vérifiée.
 
 Fini quand : les 100 lieux sont dans l'app, avec des positions vérifiées sur une carte par Enzo pour une dizaine pris au hasard.
+
+Fait :
+- `node scripts/lieux/generer.mjs` (35 s) écrit `src/cartes/positions.json`. `--chercher=mot` liste ce qu'OSM a sous ce nom, pour enquêter.
+- Déblocage dans le contour réel quand OSM l'a : parcs, bois, cimetières et quartiers avec 15 m de marge, emprise des bâtiments avec 40 m (80 m pour l'Arc de Triomphe et le parvis de Notre-Dame). Rue Crémieux, rue du Chat-qui-Pêche, villa Léandre, canal Saint-Martin et Champs-Élysées : le long de la voie. Un cercle pour les lieux qui ne sont qu'un point dans OSM.
+- Pas de contour dans OSM : La Défense (cercle de 600 m sur l'esplanade), Quartier latin (quartier administratif de la Sorbonne), Belleville (quartier administratif, côté 20e seulement), Provins (450 m autour de la tour César), Désert de Retz (250 m).
+- Station fantôme : Croix-Rouge (6e), choisie par Enzo.
+
+Lieux non trouvés dans OpenStreetMap, sans position, donc pas encore débloquables :
+- 088 Ancienne gare d'Ornano : la gare de la Petite Ceinture n'est pas étiquetée.
+- 100 Station fantôme (Croix-Rouge) : la station fermée n'est pas étiquetée.
+
+À savoir : selon OSM, le Marché des Enfants-Rouges a été endommagé par un incendie le 12 octobre 2026.
 
 ## T24 Les timbres
 

@@ -19,7 +19,7 @@ import { CarteEnGrand } from '@/album/CarteEnGrand';
 import { distanceEntre, formaterDistance, type Point } from '@/balade/mesures';
 import { MarqueurLieu } from '@/carte/MarqueurLieu';
 
-import { lieux, type Lieu } from '@/cartes/lieux';
+import { lieuxPlaces, type LieuPlace } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
 import { Ecran } from '@/components/ecran';
 import { joursAvecPassages, passagesDuJour } from '@/db/rues';
@@ -46,7 +46,7 @@ export default function Carte() {
   const { debloquees } = useDeblocage();
   const points = useSuiviPosition(etat.type === 'pret');
   const [menuSimulation, setMenuSimulation] = useState(false);
-  const [choisi, setChoisi] = useState<Lieu | null>(null);
+  const [choisi, setChoisi] = useState<LieuPlace | null>(null);
   const [maPosition, setMaPosition] = useState<Point | null>(null);
   // Sur iOS, toucher un marqueur peut aussi toucher la carte dessous : on ignore ce second tap.
   const dernierTapMarqueur = useRef(0);
@@ -192,7 +192,7 @@ export default function Carte() {
                 />
               )),
             )}
-            {lieux.map((lieu) => (
+            {lieuxPlaces.map((lieu) => (
               <MarqueurLieu
                 key={lieu.id}
                 lieu={lieu}
@@ -235,7 +235,7 @@ export default function Carte() {
                 {(() => {
                   // Ta position sur la carte, sinon ton dernier point, sinon le centre de départ.
                   const depuis = maPosition ?? points.at(-1) ?? etat.region;
-                  return `À ${formaterDistance(distanceEntre(depuis, choisi))}`;
+                  return `À ${formaterDistance(distanceEntre(depuis, choisi.emplacement))}`;
                 })()}
               </Text>
             </View>
@@ -316,13 +316,13 @@ function MenuSimulation({ onFermer }: { onFermer: () => void }) {
     <View style={styles.menu}>
       <Text style={styles.sousTitre}>Simuler une position</Text>
       <ScrollView contentContainerStyle={styles.menuListe}>
-        {lieux.map((lieu) => (
+        {lieuxPlaces.map((lieu) => (
           <Pressable
             key={lieu.id}
             style={styles.menuLigne}
             onPress={() => {
               onFermer();
-              traiterPoint({ latitude: lieu.latitude, longitude: lieu.longitude });
+              traiterPoint({ latitude: lieu.emplacement.latitude, longitude: lieu.emplacement.longitude });
             }}>
             <Text style={styles.texte}>{lieu.nom}</Text>
             {debloquees.has(lieu.id) && <Text style={styles.menuDeja}>débloqué</Text>}
