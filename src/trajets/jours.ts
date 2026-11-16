@@ -8,6 +8,18 @@ export function jourSuivant(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
 }
 
+// « 2026-11-15 », comme les colonnes jour de la base.
+export function cleJour(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const j = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${j}`;
+}
+
+export function jourDeCle(cle: string): Date {
+  const [a, m, j] = cle.split('-').map(Number);
+  return new Date(a, m - 1, j);
+}
+
 export function memeJour(a: Date, b: Date): boolean {
   return debutDuJour(a).getTime() === debutDuJour(b).getTime();
 }

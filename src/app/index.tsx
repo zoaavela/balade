@@ -22,11 +22,11 @@ import { MarqueurLieu } from '@/carte/MarqueurLieu';
 import { lieux, type Lieu } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
 import { Ecran } from '@/components/ecran';
-import { joursAvecPoints, pointsDuJour } from '@/db/points';
+import { joursAvecPassages, passagesDuJour } from '@/db/rues';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { useSuiviPosition } from '@/suivi/useSuiviPosition';
-import { decouperEnTrajets } from '@/trajets/decouper';
 import { debutDuJour, nommerJour } from '@/trajets/jours';
+import { tracerTrajets, useReseau, useVersionPassages } from '@/trajets/tracer';
 import { couleurs, espace, polices, trait } from '@/theme';
 
 // Les différents moments de l'écran Carte.
@@ -54,15 +54,23 @@ export default function Carte() {
 
   // Jour affiché : null pour aujourd'hui (tracé en direct), sinon un jour passé lu dans la base.
   const [jour, setJour] = useState<Date | null>(null);
-  const aDesPointsAujourdhui = points.length > 0;
+  // Le tracé ne montre que des rues recalées (T19), jamais les positions brutes.
+  const reseau = useReseau();
+  const version = useVersionPassages();
+  const passages = useMemo(
+    () => passagesDuJour(jour ?? new Date()),
+    // Relu au changement de jour et à chaque nouveau passage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [jour, version],
+  );
+  const trajets = useMemo(() => (reseau ? tracerTrajets(reseau, passages) : []), [reseau, passages]);
+  const aDesPassagesAujourdhui = jour === null && passages.length > 0;
   const joursPasses = useMemo(() => {
     const aujourdhui = debutDuJour(new Date()).getTime();
-    return joursAvecPoints().filter((j) => j.getTime() < aujourdhui);
-    // Relu quand on change de jour, ou quand le premier point du jour arrive.
+    return joursAvecPassages().filter((j) => j.getTime() < aujourdhui);
+    // Relu quand on change de jour, ou quand le premier passage du jour arrive.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jour, aDesPointsAujourdhui]);
-  const pointsAffiches = useMemo(() => (jour ? pointsDuJour(jour) : points), [jour, points]);
-  const trajets = useMemo(() => decouperEnTrajets(pointsAffiches), [pointsAffiches]);
+  }, [jour, aDesPassagesAujourdhui]);
 
   // Place du jour affiché dans la liste des jours passés (-1 : aujourd'hui).
   const rang = jour ? joursPasses.findIndex((j) => j.getTime() === jour.getTime()) : -1;
@@ -73,8 +81,10 @@ export default function Carte() {
     setJour(nouveau);
     setChoisi(null);
     if (nouveau) {
-      // Un jour passé : on cadre la carte sur tous ses points.
-      const coordonnees = pointsDuJour(nouveau);
+      // Un jour passé : on cadre la carte sur toutes ses rues parcourues.
+      const coordonnees = reseau
+        ? tracerTrajets(reseau, passagesDuJour(nouveau)).flatMap((t) => t.lignes.flat())
+        : [];
       if (coordonnees.length > 0) {
         refCarte.current?.fitToCoordinates(coordonnees, {
           edgePadding: { top: 120, right: 50, bottom: 60, left: 50 },
@@ -170,18 +180,17 @@ export default function Carte() {
             showsPointsOfInterests={false}
             showsCompass={false}
             pitchEnabled={false}>
-            {trajets.map(
-              (trajet) =>
-                trajet.length > 1 && (
-                  <Polyline
-                    key={trajet[0].horodatage}
-                    coordinates={trajet}
-                    strokeColor={couleurs.encre}
-                    strokeWidth={5}
-                    lineCap="round"
-                    lineJoin="round"
-                  />
-                ),
+            {trajets.flatMap((trajet) =>
+              trajet.lignes.map((ligne, i) => (
+                <Polyline
+                  key={`${trajet.debut}-${i}`}
+                  coordinates={ligne}
+                  strokeColor={couleurs.encre}
+                  strokeWidth={5}
+                  lineCap="round"
+                  lineJoin="round"
+                />
+              )),
             )}
             {lieux.map((lieu) => (
               <MarqueurLieu

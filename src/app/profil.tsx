@@ -8,10 +8,9 @@ import { Carte } from '@/cartes/Carte';
 import { lieux, type Lieu } from '@/cartes/lieux';
 import { Ecran } from '@/components/ecran';
 import { Compte } from '@/compte/Compte';
-import { tousLesPoints } from '@/db/points';
+import { distanceParcourue } from '@/db/rues';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { formaterPas, lirePas, type Pas } from '@/pas/pas';
-import { distanceTotale } from '@/profil/statistiques';
 import { TestReseau } from '@/rues/TestReseau';
 import { couleurs, espace, polices, trait } from '@/theme';
 
@@ -35,7 +34,7 @@ export default function Profil() {
   // Recalculé à chaque ouverture de l'onglet, pour suivre les nouveaux points.
   useFocusEffect(
     useCallback(() => {
-      setMetres(distanceTotale(tousLesPoints()));
+      setMetres(distanceParcourue());
       lirePas().then(setPas);
     }, []),
   );

@@ -8,6 +8,7 @@ import { cartesDebloquees, debloquer } from '@/db/cartes';
 import { ajouterPoint, type PointDate } from '@/db/points';
 import { ecrireReglage, effacerReglage, lireReglage } from '@/db/reglages';
 import { lieuxAtteints } from '@/deblocage/lieuxAtteints';
+import { recalerEnAttente } from '@/rues/recaler';
 
 import { annoncerCartes, annoncerPoints } from './evenements';
 import { notifierNouvelleCarte } from './notifications';
@@ -65,6 +66,8 @@ export function traiterPositions(positions: LocationObject[]) {
   if (nouveaux.length === 0) return;
 
   annoncerPoints(nouveaux);
+  // Recalage sur les rues en tâche de fond : le déblocage, lui, utilise les points bruts.
+  recalerEnAttente().catch((err) => console.warn('Recalage impossible', err));
   const debloques = new Set(cartesDebloquees().keys());
   const atteints = new Map<string, Lieu>();
   for (const point of nouveaux) {

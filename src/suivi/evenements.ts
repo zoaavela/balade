@@ -23,6 +23,20 @@ export function surNouvellesCartes(f: (cartes: { lieux: Lieu[]; date: Date }) =>
   };
 }
 
+// Nouveaux passages sur des rues (T19) : la carte relit le tracé du jour.
+const ecouteursPassages: Set<() => void> = new Set();
+
+export function surNouveauxPassages(f: () => void) {
+  ecouteursPassages.add(f);
+  return () => {
+    ecouteursPassages.delete(f);
+  };
+}
+
+export function annoncerPassages() {
+  ecouteursPassages.forEach((f) => f());
+}
+
 export function annoncerPoints(points: PointDate[]) {
   ecouteursPoints.forEach((f) => f(points));
 }

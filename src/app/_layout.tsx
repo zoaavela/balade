@@ -18,6 +18,7 @@ import { useSession } from '@/compte/useSession';
 import { ouvrirBase, utiliserCompte } from '@/db/base';
 import { InclinaisonProvider } from '@/cartes/inclinaison';
 import { DeblocageProvider } from '@/deblocage/Deblocage';
+import { RecalageAuto } from '@/rues/RecalageAuto';
 import { chargerReseau } from '@/rues/reseau';
 import { oublierCompte, retenirCompte } from '@/suivi/enregistrer';
 import { arreterSuiviFond } from '@/suivi/tacheFond';
@@ -96,6 +97,7 @@ export default function RootLayout() {
       <InclinaisonProvider>
         <DeblocageProvider>
       <SynchroAuto userId={userId} />
+      <RecalageAuto />
       <StatusBar style="dark" />
       <Tabs
         screenOptions={{

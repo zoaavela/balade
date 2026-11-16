@@ -49,11 +49,17 @@ export type Fond = {
 export type SegmentProche = { segment: number; distance_m: number };
 
 let enCours: Promise<Reseau> | null = null;
+let charge: Reseau | null = null;
+
+// Le réseau s'il est déjà chargé, sinon null.
+export function reseauSiCharge(): Reseau | null {
+  return charge;
+}
 
 // Charge le réseau une seule fois. Les appels suivants renvoient le même.
 export function chargerReseau(): Promise<Reseau> {
   if (!enCours) {
-    enCours = charger().catch((err) => {
+    enCours = charger().then((r) => (charge = r)).catch((err) => {
       enCours = null; // nouvel essai au prochain appel
       throw err;
     });
@@ -216,6 +222,109 @@ export function segmentsProches(r: Reseau, lat: number, lon: number, rayon_m = 2
     }
   }
   return resultat.sort((a, b) => a.distance_m - b.distance_m);
+}
+
+// Projection d'un point (en mètres) sur un segment : distance au tracé et
+// abscisse, c'est-à-dire la distance depuis le début du segment en le suivant.
+export function projeter(r: Reseau, segment: number, px: number, py: number) {
+  let min = Infinity, abscisse = 0, parcouru = 0;
+  const fin = r.debutPts[segment + 1];
+  let a = pointM(r, r.debutPts[segment]);
+  for (let k = r.debutPts[segment] + 1; k < fin; k++) {
+    const b = pointM(r, k);
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const l = Math.hypot(dx, dy);
+    let t = l ? ((px - a[0]) * dx + (py - a[1]) * dy) / (l * l) : 0;
+    t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(px - a[0] - t * dx, py - a[1] - t * dy);
+    if (d < min) {
+      min = d;
+      abscisse = parcouru + t * l;
+    }
+    parcouru += l;
+    a = b;
+  }
+  return { distance_m: min, abscisse_m: abscisse };
+}
+
+// Clé d'une extrémité : deux segments qui se touchent partagent exactement le
+// même point, puisqu'ils viennent du même noeud OpenStreetMap.
+function cleExtremite(r: Reseau, k: number): number {
+  return r.pts[k * 2] * 65536 + r.pts[k * 2 + 1];
+}
+
+function extremites(r: Reseau, segment: number): [number, number] {
+  return [cleExtremite(r, r.debutPts[segment]), cleExtremite(r, r.debutPts[segment + 1] - 1)];
+}
+
+// Segments qui touchent chaque extrémité, construit à la première demande.
+let voisinage: { reseau: Reseau; parExtremite: Map<number, number[]> } | null = null;
+
+function parExtremite(r: Reseau): Map<number, number[]> {
+  if (voisinage?.reseau === r) return voisinage.parExtremite;
+  const carte = new Map<number, number[]>();
+  for (let s = 0; s < r.nbSegments; s++) {
+    for (const cle of extremites(r, s)) {
+      const liste = carte.get(cle);
+      if (liste) liste.push(s);
+      else carte.set(cle, [s]);
+    }
+  }
+  voisinage = { reseau: r, parExtremite: carte };
+  return carte;
+}
+
+// Les segments reliés à celui-ci par une de ses extrémités.
+export function voisins(r: Reseau, segment: number): number[] {
+  const carte = parExtremite(r);
+  const res = new Set<number>();
+  for (const cle of extremites(r, segment)) {
+    for (const s of carte.get(cle) ?? []) if (s !== segment) res.add(s);
+  }
+  return [...res];
+}
+
+export function relies(r: Reseau, a: number, b: number): boolean {
+  const [a0, a1] = extremites(r, a);
+  const [b0, b1] = extremites(r, b);
+  return a0 === b0 || a0 === b1 || a1 === b0 || a1 === b1;
+}
+
+export function longueurSegment(r: Reseau, segment: number): number {
+  let total = 0;
+  let a = pointM(r, r.debutPts[segment]);
+  for (let k = r.debutPts[segment] + 1; k < r.debutPts[segment + 1]; k++) {
+    const b = pointM(r, k);
+    total += Math.hypot(b[0] - a[0], b[1] - a[1]);
+    a = b;
+  }
+  return total;
+}
+
+// Tracé d'un segment en coordonnées GPS, pour le dessiner sur la carte.
+export function coordonneesSegment(r: Reseau, segment: number): { latitude: number; longitude: number }[] {
+  const { sud, ouest, nord, est } = r.bornes;
+  const res = [];
+  for (let k = r.debutPts[segment]; k < r.debutPts[segment + 1]; k++) {
+    res.push({
+      latitude: sud + (r.pts[k * 2 + 1] / QUANT) * (nord - sud),
+      longitude: ouest + (r.pts[k * 2] / QUANT) * (est - ouest),
+    });
+  }
+  return res;
+}
+
+// Retrouve un segment à partir de son identifiant stable. Null s'il n'existe
+// plus (données des rues régénérées depuis).
+let parId: { reseau: Reseau; index: Map<string, number> } | null = null;
+
+export function segmentDepuisId(r: Reseau, id: string): number | null {
+  if (parId?.reseau !== r) {
+    const index = new Map<string, number>();
+    for (let s = 0; s < r.nbSegments; s++) index.set(idSegment(r, s), s);
+    parId = { reseau: r, index };
+  }
+  return parId.index.get(id) ?? null;
 }
 
 // Identifiant stable d'un segment : voie OpenStreetMap et numéro du morceau.

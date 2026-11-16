@@ -38,6 +38,18 @@ Phase D, rues et carte maison (marche dans Expo Go, à faire avant T08 au choix 
 - [ ] T21 Pourcentages de rues
 - [ ] T22 Synchroniser les rues, plus les points
 
+Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 novembre 2026) :
+
+- [ ] T23 Les 100 lieux
+- [ ] T24 Les timbres
+- [ ] T25 L'album en carnet de timbres
+- [ ] T26 Visibilité : visibles, indices, secrets, légendaires
+- [ ] T27 Les défis
+- [ ] T28 Notifications des défis
+- [ ] T29 Profil : username, bio, photo
+- [ ] T30 Les trois vues de l'accueil (après T20)
+- [ ] T31 Bug : position GPS bloquée sur « recherche en cours » dehors
+
 ---
 
 # Phase A : Expo Go, app ouverte
@@ -252,7 +264,9 @@ Objectif : transformer les positions en rues parcourues.
 - Nouvelle table `rues_parcourues` : segment_id, premiere_fois, derniere_fois, nb_passages.
 - Recaler aussi les points déjà enregistrés, une fois, au premier lancement après la mise à jour.
 - Les trajets du jour (T07) affichent désormais les segments recalés, plus les points bruts.
-- Proposition à valider par Enzo avant de coder : supprimer les points bruts du téléphone au bout de 7 jours une fois recalés.
+- Validé par Enzo : supprimer les points bruts du téléphone au bout de 7 jours, seulement s'ils sont recalés et déjà sauvegardés sur le compte. La distance de chaque journée est figée juste avant (table `distances_jour`), pour que les kilomètres du Profil ne baissent pas.
+- Table `passages` (segment, jour, heure) pour redessiner les journées passées sans les points bruts. Elle reste sur le téléphone.
+- Une rue ne compte que si l'on avance le long d'elle : deux points de suite avec 10 m de progression, ou le passage vers une rue reliée. En plus, rien n'est validé sans vrai déplacement : sur les 8 derniers points, au moins 50 m d'éloignement, et au moins 60 % du chemin suivi. Les petits segments sautés entre deux points sont comblés par le plus court chemin, jusqu'à 60 m.
 
 Fini quand : une marche dans le quartier s'affiche collée aux rues, et un passage chez soi ou dans un bâtiment n'apparaît nulle part.
 
@@ -286,9 +300,100 @@ Objectif : ne plus jamais envoyer de positions brutes sur le serveur.
 
 À faire :
 - Synchroniser la table `rues_parcourues` et les cartes débloquées, plus la table des points.
+- La table `passages` (T19) contient l'heure de chaque passage : elle reste sur le téléphone. On ne synchronise que le jour de chaque passage, jamais l'heure.
 - Nouvelle migration Supabase : table des rues parcourues avec sécurité au niveau des lignes, puis suppression des points bruts déjà envoyés et de leur table.
 - Mettre à jour `scripts/test-rls.mjs` pour vérifier la nouvelle table.
 - Mettre à jour l'écran d'accueil et la politique de confidentialité : seules les rues parcourues et les cartes quittent le téléphone.
 
 Fini quand : le compte Supabase ne contient plus aucune position brute, et une réinstallation retrouve les rues parcourues.
+
+---
+
+# Phase E : interface et jeu
+
+Objectif : une interface complète et belle, testable depuis chez soi avec le menu de simulation de position. Référence du contenu : docs/LIEUX.md.
+
+## T23 Les 100 lieux
+
+- Remplacer les 20 lieux de `src/cartes/lieux.ts` par les 100 de docs/LIEUX.md, en gardant les identifiants existants pour ne pas perdre les lieux déjà débloqués.
+- Nouveaux champs : rarete (visible, indice, secret, legendaire), format (portrait, paysage, carre, grand), defis (liste d'identifiants), indice (texte).
+- Coordonnées et rayons calculés depuis l'extrait OpenStreetMap déjà en cache (scripts/rues/cache), par un script relançable. Rayon plus grand pour les parcs, bois et quartiers (contour réel si OSM l'a). Lister dans le ticket les lieux non trouvés au lieu d'inventer des coordonnées.
+- Les anecdotes restent vides quand on n'en a pas de vérifiée.
+
+Fini quand : les 100 lieux sont dans l'app, avec des positions vérifiées sur une carte par Enzo pour une dizaine pris au hasard.
+
+## T24 Les timbres
+
+Les timbres remplacent les cartes carrées.
+- Composant `Timbre` : bord dentelé (perforations), marge blanche, image au centre, petit nom, numéro, couleur de la catégorie. Quatre formats : portrait, paysage, carré, grand (pour quartiers et légendaires).
+- Pas encore de photos : à la place, un aplat de la couleur de la catégorie avec le nom en grand. Prévoir l'emplacement de la photo et du futur filtre maison (bichromie, trame, encres décalées), sans le coder.
+- Oblitération : un tampon rond daté posé en travers du timbre quand il est débloqué.
+- Toucher un timbre : il s'agrandit en plein écran, comme sous une loupe. Deuxième toucher : il se retourne et montre le verso (nom, catégorie, zone, anecdote, date de découverte, défis liés).
+- Garder le vernis qui suit l'inclinaison si ça reste joli sur un timbre, sinon le retirer.
+
+Fini quand : les quatre formats s'affichent correctement, l'agrandissement et le retournement sont fluides.
+
+## T25 L'album en carnet de timbres
+
+- L'onglet Album devient un carnet : une page par défi, plus une page « Autres lieux ».
+- Chaque page montre les emplacements de ses timbres. Débloqué : le timbre oblitéré. Pas encore : l'emplacement vide en pointillés, avec le numéro.
+- En haut : nombre total de timbres sur 100, et filtre par catégorie.
+- Une page complète change d'aspect (bordure dorée ou équivalent sobre).
+
+Fini quand : l'album reflète exactement les lieux débloqués et se lit comme un carnet.
+
+## T26 Visibilité
+
+- Visible : marqueur normal sur la carte.
+- Indice : sur la carte, une zone floue d'environ 300 m (le centre décalé au hasard, mais toujours le même pour un lieu) avec un point d'interrogation. Toucher la zone affiche la devinette.
+- Secret : rien sur la carte. À moins de 200 m, une vibration légère, au plus une fois par lieu et par heure. Un secret révélé par un défi devient un indice.
+- Légendaire : visible, timbre grand format. Pour la station fantôme, prévoir une validation manuelle avec photo du billet, à coder plus tard.
+- Tout se teste avec le menu de simulation de position.
+
+Fini quand : chaque niveau se comporte comme décrit en simulation.
+
+## T27 Les défis
+
+- Les 13 défis de docs/LIEUX.md, dans un fichier de données.
+- Onglet Défis : liste des défis avec icône, titre, avancement « 3 / 7 » et barre. Toucher un défi ouvre sa page d'album.
+- Une icône par défi, dessinée simple dans le style de l'app (trait d'encre, une couleur).
+- Défi terminé : écran de célébration, timbre spécial, et révélation des secrets liés.
+- Les défis basés sur les rues (Monopoly, bestiaire, escargot…) viendront après T19, ne pas les coder ici.
+
+Fini quand : terminer Voyage en train en simulation révèle l'ancienne gare d'Ornano et la rue Crémieux.
+
+## T28 Notifications des défis
+
+- Notifications locales (expo-notifications) : avancée d'un défi (« Voyage en train : 3 / 7. Gare de l'Est ajoutée. ») et défi terminé.
+- Plusieurs avancées en peu de temps regroupées en une seule notification.
+- Réglages : couper séparément nouveaux lieux, avancées de défis, défis terminés.
+- App fermée : dépend de T09, ne pas bloquer dessus.
+
+Fini quand : en simulation, l'app ouverte en arrière-plan, la notification arrive.
+
+## T29 Profil : username, bio, photo
+
+- Pas de nom ni de prénom. Username unique sans tenir compte des majuscules, 3 à 20 caractères (lettres, chiffres, point, tiret bas), mots réservés interdits (admin, balade, support…), modifiable une fois tous les 30 jours. Contrainte d'unicité en base, vérifiée côté serveur.
+- Bio de 150 caractères maximum.
+- Photo de profil stockée sur Cloudflare R2. Aucune clé R2 dans l'app : une fonction Supabase vérifie la session et renvoie un lien d'envoi signé et temporaire. Image redimensionnée en 512 px, JPEG ou WebP, 2 Mo maximum, nom de fichier aléatoire.
+- Supprimer toutes les métadonnées de la photo avant l'envoi, en particulier la position GPS, et le revérifier côté serveur.
+- Sécurité au niveau des lignes : chacun ne modifie que son profil.
+
+Fini quand : Enzo change sa photo, sa bio et son username, et deux comptes de test ne peuvent pas modifier le profil l'un de l'autre.
+
+## T30 Les trois vues de l'accueil
+
+À faire après T20 (carte maison).
+- Sélecteur en haut de la carte : Rues, Transports, Lieux.
+- Rues : la vue normale, rues parcourues en couleur.
+- Transports : lignes de métro, RER et tram en couleur depuis les données OpenStreetMap, stations visitées marquées.
+- Lieux : le fond s'efface, il ne reste que les lieux selon leur visibilité.
+
+Fini quand : passer d'une vue à l'autre est instantané.
+
+## T31 Bug de position dehors
+
+Dehors, l'app reste sur « recherche en cours » sans obtenir de position. Trouver pourquoi (délai trop court, précision trop exigeante, effet du T19, permission), corriger, et ajouter un message clair si le GPS ne répond pas.
+
+Fini quand : dehors, la position arrive en moins de 15 secondes.
 

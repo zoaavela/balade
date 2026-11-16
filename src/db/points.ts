@@ -22,23 +22,3 @@ export function pointsDuJour(jour: Date = new Date()): PointDate[] {
     [debut.getTime(), jourSuivant(debut).getTime()],
   );
 }
-
-// Tous les points jamais enregistrés, dans l'ordre.
-export function tousLesPoints(): PointDate[] {
-  return baseCompte().getAllSync<PointDate>(
-    'SELECT latitude, longitude, horodatage FROM points ORDER BY horodatage',
-    [],
-  );
-}
-
-// Les jours qui ont au moins un point, du plus ancien au plus récent (à minuit, heure locale).
-export function joursAvecPoints(): Date[] {
-  const lignes = baseCompte().getAllSync<{ jour: string }>(
-    "SELECT DISTINCT date(horodatage / 1000, 'unixepoch', 'localtime') AS jour FROM points ORDER BY jour",
-    [],
-  );
-  return lignes.map(({ jour }) => {
-    const [a, m, j] = jour.split('-').map(Number);
-    return new Date(a, m - 1, j);
-  });
-}

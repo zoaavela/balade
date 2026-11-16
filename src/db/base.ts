@@ -57,7 +57,36 @@ export function utiliserCompte(id: string) {
       cle TEXT PRIMARY KEY,
       valeur TEXT NOT NULL
     );
+
+    -- Rues parcourues (T19) : une ligne par segment de rue, identifiant du réseau embarqué.
+    CREATE TABLE IF NOT EXISTS rues_parcourues (
+      segment_id TEXT PRIMARY KEY,
+      premiere_fois INTEGER NOT NULL, -- millisecondes depuis 1970
+      derniere_fois INTEGER NOT NULL,
+      nb_passages INTEGER NOT NULL
+    );
+
+    -- Chaque passage sur un segment, pour redessiner les journées sans les points bruts.
+    -- L'heure reste sur le téléphone : seul le jour pourra être synchronisé (T22).
+    CREATE TABLE IF NOT EXISTS passages (
+      segment_id TEXT NOT NULL,
+      jour TEXT NOT NULL, -- AAAA-MM-JJ, heure locale
+      horodatage INTEGER NOT NULL,
+      PRIMARY KEY (segment_id, horodatage)
+    );
+    CREATE INDEX IF NOT EXISTS passages_jour ON passages (jour, horodatage);
+
+    -- Distance d'une journée, figée avant d'en supprimer les points bruts.
+    CREATE TABLE IF NOT EXISTS distances_jour (
+      jour TEXT PRIMARY KEY, -- AAAA-MM-JJ, heure locale
+      metres REAL NOT NULL
+    );
   `);
+  // Colonne ajoutée au T19 : 1 une fois le point recalé sur les rues.
+  const colonnes = base.getAllSync<{ name: string }>('PRAGMA table_info(points)', []);
+  if (!colonnes.some((c) => c.name === 'recale')) {
+    base.execSync('ALTER TABLE points ADD COLUMN recale INTEGER NOT NULL DEFAULT 0');
+  }
   compte = { id, base };
   reprendreAnciennesDonnees(base, id);
 }
