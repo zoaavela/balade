@@ -432,3 +432,9 @@ Dehors, l'app reste sur « recherche en cours » sans obtenir de position. Trouv
 
 Fini quand : dehors, la position arrive en moins de 15 secondes.
 
+Fait :
+- Cause probable : si iOS n'avait pas de dernière position, l'écran attendait `getCurrentPositionAsync` sans limite de temps, et cet appel peut ne jamais répondre sur iPhone.
+- `src/suivi/premierePosition.ts` : dernière position de moins de 10 minutes, sinon le flux continu et une demande ponctuelle en même temps, la première qui répond gagne. Limite de 15 secondes.
+- Au-delà : si la localisation est coupée, l'écran le dit. Sinon la carte s'affiche sur Paris avec un message, et se centre dès que la position arrive.
+- « Position exacte » coupée dans iOS : message dédié, car les points à 1 km près sont jetés.
+

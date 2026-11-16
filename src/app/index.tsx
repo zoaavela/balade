@@ -27,6 +27,7 @@ import { Ecran } from '@/components/ecran';
 import { joursAvecPassages, passagesDuJour } from '@/db/rues';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { affichageLieu, indiceTouche, secretsReveles, type Affichage } from '@/deblocage/visibilite';
+import { premierePosition } from '@/suivi/premierePosition';
 import { useSuiviPosition } from '@/suivi/useSuiviPosition';
 import { debutDuJour, nommerJour } from '@/trajets/jours';
 import { tracerTrajets, useReseau, useVersionPassages } from '@/trajets/tracer';
@@ -39,9 +40,13 @@ type Etat =
   | { type: 'refuse' } // refusé : seul le passage par les réglages peut changer ça
   | { type: 'recherche' } // autorisé, on attend la position
   | { type: 'introuvable' } // autorisé mais pas de position (localisation coupée, pas de signal)
-  | { type: 'pret'; region: Region };
+  // trouve : false si le GPS n'a pas répondu à temps. La carte s'affiche quand même,
+  // sur Paris, avec un message, et se recentre dès que la position arrive.
+  | { type: 'pret'; region: Region; trouve: boolean };
 
 const ZOOM = 0.012; // environ 1 km de large
+const DELAI_POSITION_MS = 15000;
+const PARIS: Region = { latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.12, longitudeDelta: 0.12 };
 
 export default function Carte() {
   const [etat, setEtat] = useState<Etat>({ type: 'verification' });
@@ -69,6 +74,8 @@ export default function Carte() {
     ? (affichages.find((a) => a.lieu.id === choisi.id)?.affichage ?? null)
     : null;
   const [maPosition, setMaPosition] = useState<Point | null>(null);
+  // « Position exacte » coupée dans les réglages d'iOS : positions à 1 km près, inutilisables.
+  const [precisionReduite, setPrecisionReduite] = useState(false);
   // Sur iOS, toucher un marqueur peut aussi toucher la carte dessous : on ignore ce second tap.
   const dernierTapMarqueur = useRef(0);
   const refCarte = useRef<MapView>(null);
@@ -129,14 +136,12 @@ export default function Carte() {
   const chercherPosition = useCallback(async () => {
     carteAffichee.current = false;
     setEtat({ type: 'recherche' });
-    try {
-      // La dernière position connue arrive tout de suite. Sinon on demande une position fraîche.
-      const position =
-        (await Location.getLastKnownPositionAsync()) ??
-        (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+    const position = await premierePosition(DELAI_POSITION_MS);
+    if (position) {
       carteAffichee.current = true;
       setEtat({
         type: 'pret',
+        trouve: true,
         region: {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -144,13 +149,29 @@ export default function Carte() {
           longitudeDelta: ZOOM,
         },
       });
-    } catch {
-      setEtat({ type: 'introuvable' });
+      return;
     }
+    // Pas de réponse : service de localisation coupé, ou GPS qui ne capte pas encore.
+    const service = await Location.hasServicesEnabledAsync().catch(() => true);
+    if (!service) {
+      setEtat({ type: 'introuvable' });
+      return;
+    }
+    carteAffichee.current = true;
+    setEtat({ type: 'pret', trouve: false, region: PARIS });
   }, []);
 
+  // Première vraie position après un délai dépassé : on centre la carte sur toi.
+  useEffect(() => {
+    if (etat.type !== 'pret' || etat.trouve || !maPosition) return;
+    refCarte.current?.animateToRegion({ ...maPosition, latitudeDelta: ZOOM, longitudeDelta: ZOOM });
+    setEtat({ ...etat, trouve: true });
+  }, [etat, maPosition]);
+
   const verifier = useCallback(async () => {
-    const { status } = await Location.getForegroundPermissionsAsync();
+    const permission = await Location.getForegroundPermissionsAsync();
+    const { status } = permission;
+    setPrecisionReduite(permission.ios?.accuracy === 'reduced');
     if (status === 'granted') {
       // Carte déjà affichée (retour dans l'app) : on n'y touche pas.
       if (!carteAffichee.current) chercherPosition();
@@ -243,6 +264,16 @@ export default function Carte() {
               );
             })}
           </MapView>
+
+          {(!etat.trouve || precisionReduite) && (
+            <View style={styles.bandeau}>
+              <Text style={styles.bandeauTexte}>
+                {precisionReduite
+                  ? "Ta position est approximative : l'app ne peut pas enregistrer tes trajets. Active « Position exacte » dans les réglages de l'app, rubrique Position."
+                  : "Le GPS ne répond pas encore. Mets-toi à découvert, loin des grands immeubles. La carte se centrera sur toi dès qu'il te trouve."}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.selecteur}>
             <Fleche
@@ -513,6 +544,23 @@ const styles = StyleSheet.create({
   infoNom: {
     fontFamily: polices.extraGras,
     fontSize: 22,
+    color: couleurs.encre,
+  },
+  bandeau: {
+    position: 'absolute',
+    left: espace.m,
+    right: espace.m,
+    top: 88,
+    padding: espace.s,
+    backgroundColor: couleurs.fond,
+    borderColor: couleurs.encre,
+    borderWidth: trait,
+    borderRadius: 12,
+  },
+  bandeauTexte: {
+    fontFamily: polices.moyen,
+    fontSize: 14,
+    lineHeight: 19,
     color: couleurs.encre,
   },
   infoCategorie: {
