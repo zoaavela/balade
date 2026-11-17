@@ -36,7 +36,7 @@ const explications: Etape[] = [
   {
     titre: 'Tes positions restent à toi',
     texte:
-      "Elles sont rangées sur ton téléphone et sauvegardées sur ton compte, pour les retrouver si tu changes de téléphone. Toi seul peux les voir. Les autres ne verront jamais ton tracé.",
+      "Elles ne quittent jamais ton téléphone. Ton compte garde seulement les rues que tu as parcourues, tes timbres et tes totaux du jour, pour les retrouver si tu changes de téléphone. Les autres ne verront jamais ton tracé.",
   },
 ];
 

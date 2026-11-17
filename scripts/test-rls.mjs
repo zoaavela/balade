@@ -42,7 +42,11 @@ const quand = new Date().toISOString();
 
 // Nettoyage d'un essai précédent, puis données de A.
 await A.client.from('cartes_debloquees').delete().eq('lieu_id', LIEU);
-await A.client.from('points').delete().eq('precision_m', 999);
+const SEGMENT = '4294967295-1'; // un bout de rue qui n'existe pas dans le réseau
+const JOUR = '2024-01-02';
+await A.client.from('rues_parcourues').delete().eq('segment_id', SEGMENT);
+await A.client.from('passages_jours').delete().eq('segment_id', SEGMENT);
+await A.client.from('stats_jours').delete().eq('jour', JOUR);
 
 const carteA = await A.client
   .from('cartes_debloquees')
@@ -50,12 +54,17 @@ const carteA = await A.client
   .select();
 verifier(!carteA.error && carteA.data.length === 1, 'A ajoute sa carte');
 
-const pointA = await A.client
-  .from('points')
-  .insert({ latitude: 48.8584, longitude: 2.2945, precision_m: 999, horodatage: quand })
+const rueA = await A.client
+  .from('rues_parcourues')
+  .insert({ segment_id: SEGMENT, premiere_fois: quand, derniere_fois: quand, nb_passages: 1 })
   .select();
-verifier(!pointA.error && pointA.data.length === 1, 'A ajoute son point');
-const idPoint = pointA.data?.[0]?.id;
+verifier(!rueA.error && rueA.data.length === 1, 'A ajoute une rue parcourue');
+
+const passageA = await A.client.from('passages_jours').insert({ segment_id: SEGMENT, jour: JOUR }).select();
+verifier(!passageA.error && passageA.data.length === 1, 'A ajoute un jour de passage');
+
+const statA = await A.client.from('stats_jours').insert({ jour: JOUR, metres: 1234, pas: 5678 }).select();
+verifier(!statA.error && statA.data.length === 1, 'A ajoute ses stats du jour');
 
 const lectureA = await A.client.from('cartes_debloquees').select().eq('lieu_id', LIEU);
 verifier(lectureA.data?.length === 1, 'A relit sa carte');
@@ -64,8 +73,10 @@ verifier(lectureA.data?.length === 1, 'A relit sa carte');
 const lectureB = await B.client.from('cartes_debloquees').select().eq('user_id', A.id);
 verifier(!lectureB.error && lectureB.data.length === 0, 'B ne voit pas les cartes de A');
 
-const pointsB = await B.client.from('points').select().eq('user_id', A.id);
-verifier(!pointsB.error && pointsB.data.length === 0, 'B ne voit pas les points de A');
+for (const table of ['rues_parcourues', 'passages_jours', 'stats_jours']) {
+  const lu = await B.client.from(table).select().eq('user_id', A.id);
+  verifier(!lu.error && lu.data.length === 0, `B ne voit rien de A dans ${table}`);
+}
 
 const modifB = await B.client
   .from('cartes_debloquees')
@@ -74,8 +85,33 @@ const modifB = await B.client
   .select();
 verifier(!modifB.error && modifB.data.length === 0, 'B ne peut pas modifier la carte de A');
 
-const supprB = await B.client.from('points').delete().eq('id', idPoint).select();
-verifier(!supprB.error && supprB.data.length === 0, 'B ne peut pas supprimer le point de A');
+const rueModifB = await B.client
+  .from('rues_parcourues')
+  .update({ nb_passages: 999 })
+  .eq('user_id', A.id)
+  .select();
+verifier(!rueModifB.error && rueModifB.data.length === 0, 'B ne peut pas modifier les rues de A');
+
+const supprB = await B.client.from('stats_jours').delete().eq('user_id', A.id).select();
+verifier(!supprB.error && supprB.data.length === 0, 'B ne peut pas supprimer les stats de A');
+
+const rueUsurpee = await B.client
+  .from('rues_parcourues')
+  .insert({ user_id: A.id, segment_id: '1-1', premiere_fois: quand, derniere_fois: quand, nb_passages: 1 });
+verifier(Boolean(rueUsurpee.error), 'B ne peut pas ajouter de rue au nom de A');
+
+// Le serveur refuse les valeurs absurdes, quelle que soit l'app qui écrit.
+const segmentFaux = await A.client
+  .from('rues_parcourues')
+  .insert({ segment_id: 'rue de Rivoli', premiere_fois: quand, derniere_fois: quand, nb_passages: 1 });
+verifier(Boolean(segmentFaux.error), 'Un identifiant de rue mal formé est refusé');
+
+const tropDeMetres = await A.client.from('stats_jours').insert({ jour: '2024-01-03', metres: 5000000, pas: 0 });
+verifier(Boolean(tropDeMetres.error), 'Une journée de 5 000 km est refusée');
+
+// Plus aucune position brute sur le serveur (T22).
+const pointsA = await A.client.from('points').select().limit(1);
+verifier(Boolean(pointsA.error), "La table des points n'existe plus");
 
 const usurpation = await B.client
   .from('cartes_debloquees')
@@ -88,20 +124,27 @@ verifier(
   Boolean(lectureVisiteur.error) || lectureVisiteur.data.length === 0,
   'Un visiteur sans compte ne voit aucune carte',
 );
-const ecritureVisiteur = await visiteur
-  .from('points')
-  .insert({ latitude: 0, longitude: 0, precision_m: 1, horodatage: quand });
+const ruesVisiteur = await visiteur.from('rues_parcourues').select();
+verifier(
+  Boolean(ruesVisiteur.error) || ruesVisiteur.data.length === 0,
+  'Un visiteur sans compte ne voit aucune rue',
+);
+const ecritureVisiteur = await visiteur.from('stats_jours').insert({ jour: JOUR, metres: 1, pas: 1 });
 verifier(Boolean(ecritureVisiteur.error), 'Un visiteur sans compte ne peut rien écrire');
 
 // Les données de A sont intactes après les tentatives de B.
 const verifA = await A.client.from('cartes_debloquees').select().eq('lieu_id', LIEU);
 verifier(verifA.data?.[0]?.debloquee_le?.startsWith(quand.slice(0, 16)), 'La carte de A est intacte');
-const verifPoint = await A.client.from('points').select().eq('id', idPoint);
-verifier(verifPoint.data?.length === 1, 'Le point de A est toujours là');
+const verifRue = await A.client.from('rues_parcourues').select('nb_passages').eq('segment_id', SEGMENT);
+verifier(verifRue.data?.[0]?.nb_passages === 1, 'La rue de A est intacte');
+const verifStat = await A.client.from('stats_jours').select('metres').eq('jour', JOUR);
+verifier(verifStat.data?.length === 1, 'Les stats de A sont toujours là');
 
 // Nettoyage.
 await A.client.from('cartes_debloquees').delete().eq('lieu_id', LIEU);
-await A.client.from('points').delete().eq('id', idPoint);
+await A.client.from('rues_parcourues').delete().eq('segment_id', SEGMENT);
+await A.client.from('passages_jours').delete().eq('segment_id', SEGMENT);
+await A.client.from('stats_jours').delete().eq('jour', JOUR);
 
 // Profils (T29). Les profils de test sont créés une fois et gardés : un profil ne se
 // supprime pas depuis l'app, et changer de username bloquerait 30 jours. On ne touche

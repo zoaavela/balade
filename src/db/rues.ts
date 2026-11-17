@@ -39,7 +39,8 @@ export function enregistrerPassage(base: SQLiteDatabase, segmentId: string, horo
      ON CONFLICT (segment_id) DO UPDATE SET
        premiere_fois = min(premiere_fois, excluded.premiere_fois),
        derniere_fois = max(derniere_fois, excluded.derniere_fois),
-       nb_passages = nb_passages + 1`,
+       nb_passages = nb_passages + 1,
+       envoyee = 0`,
     [segmentId, horodatage, horodatage],
   );
 }
@@ -85,8 +86,8 @@ export function distanceParcourue(): number {
 }
 
 // Supprime les points bruts des journées de plus de 7 jours, seulement si tous
-// leurs points sont recalés et déjà sauvegardés sur le compte. La distance de
-// la journée est figée juste avant. Renvoie le nombre de points supprimés.
+// leurs points sont recalés. Ils ne sont jamais envoyés au serveur (T22). La distance
+// de la journée est figée juste avant. Renvoie le nombre de points supprimés.
 export function purgerPointsBruts(base: SQLiteDatabase): number {
   const maintenant = new Date();
   const limite = cleJour(
@@ -95,7 +96,7 @@ export function purgerPointsBruts(base: SQLiteDatabase): number {
   const jours = base.getAllSync<{ jour: string }>(
     `SELECT ${JOUR_SQL} AS jour FROM points
      GROUP BY jour
-     HAVING jour < ? AND min(recale) = 1 AND min(envoye) = 1`,
+     HAVING jour < ? AND min(recale) = 1`,
     [limite],
   );
   let supprimes = 0;
@@ -113,4 +114,41 @@ export function purgerPointsBruts(base: SQLiteDatabase): number {
     });
   }
   return supprimes;
+}
+
+// Mètres et pas de chaque journée, pour la sauvegarde sur le compte (T22).
+// Mètres : la distance figée si la journée l'est, sinon celle de ses points.
+export function statsParJour(base: SQLiteDatabase): Map<string, { metres: number; pas: number }> {
+  const stats = new Map<string, { metres: number; pas: number }>();
+  const ligne = (jour: string) => {
+    let s = stats.get(jour);
+    if (!s) stats.set(jour, (s = { metres: 0, pas: 0 }));
+    return s;
+  };
+  for (const { jour, metres } of base.getAllSync<{ jour: string; metres: number }>(
+    'SELECT jour, metres FROM distances_jour',
+    [],
+  )) {
+    ligne(jour).metres = metres;
+  }
+  const points = base.getAllSync<PointDate & { jour: string }>(
+    `SELECT latitude, longitude, horodatage, ${JOUR_SQL} AS jour FROM points
+     WHERE ${JOUR_SQL} NOT IN (SELECT jour FROM distances_jour)
+     ORDER BY horodatage`,
+    [],
+  );
+  const parJour = new Map<string, PointDate[]>();
+  for (const p of points) {
+    const liste = parJour.get(p.jour) ?? [];
+    liste.push(p);
+    parJour.set(p.jour, liste);
+  }
+  for (const [jour, liste] of parJour) ligne(jour).metres = distanceTotale(liste);
+  for (const { jour, pas } of base.getAllSync<{ jour: string; pas: number }>(
+    'SELECT jour, pas FROM pas_jours',
+    [],
+  )) {
+    ligne(jour).pas = pas;
+  }
+  return stats;
 }

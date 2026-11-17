@@ -36,7 +36,7 @@ Phase D, rues et carte maison (marche dans Expo Go, à faire avant T08 au choix 
 - [ ] T19 Recalage sur les rues
 - [ ] T20 Carte maison
 - [ ] T21 Pourcentages de rues
-- [ ] T22 Synchroniser les rues, plus les points
+- [x] T22 Synchroniser les rues, plus les points
 
 Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 novembre 2026) :
 
@@ -308,6 +308,14 @@ Objectif : ne plus jamais envoyer de positions brutes sur le serveur.
 - Mettre à jour l'écran d'accueil et la politique de confidentialité : seules les rues parcourues et les cartes quittent le téléphone.
 
 Fini quand : le compte Supabase ne contient plus aucune position brute, et une réinstallation retrouve les rues parcourues.
+
+Fait :
+- Migration `supabase/migrations/0003_rues.sql` : `rues_parcourues`, `passages_jours`, `stats_jours` de docs/DONNEES.md, sécurité au niveau des lignes, valeurs vérifiées par la base. Puis suppression de la table `points` et de son contenu (validé par Enzo). Mise en place : docs/SUPABASE.md, étape 9.
+- Synchro : plus aucun point envoyé ni reçu. Partent les timbres, les rues (renvoyées quand on repasse), les jours de passage sans l'heure, et les mètres et pas des jours qui ont changé.
+- Nouveau téléphone : rues et stats récupérées une fois. Les jours de passage restent sur le serveur, sans être relus : la carte des trajets du jour doit disparaître à terme (Enzo).
+- Téléphone : colonnes « envoyé » sur `rues_parcourues` et `passages`. La purge des points après 7 jours ne demande plus qu'ils soient envoyés, seulement recalés.
+- `scripts/test-rls.mjs` : tests des trois tables, des valeurs refusées, et de l'absence de la table des points.
+- Accueil : le texte sur la confidentialité dit que les positions ne quittent jamais le téléphone. Pas encore d'écran de politique de confidentialité (T32).
 
 ---
 

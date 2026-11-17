@@ -39,7 +39,7 @@ export function utiliserCompte(id: string) {
       longitude REAL NOT NULL,
       precision_m REAL NOT NULL,
       horodatage INTEGER NOT NULL UNIQUE, -- millisecondes depuis 1970
-      envoye INTEGER NOT NULL DEFAULT 0 -- 1 une fois sauvegardé sur le compte
+      envoye INTEGER NOT NULL DEFAULT 0 -- plus utilisé depuis le T22 : les points ne quittent plus le téléphone
     );
 
     CREATE TABLE IF NOT EXISTS cartes_debloquees (
@@ -82,13 +82,20 @@ export function utiliserCompte(id: string) {
       metres REAL NOT NULL
     );
   `);
-  // Colonne ajoutée au T19 : 1 une fois le point recalé sur les rues.
-  const colonnes = base.getAllSync<{ name: string }>('PRAGMA table_info(points)', []);
-  if (!colonnes.some((c) => c.name === 'recale')) {
-    base.execSync('ALTER TABLE points ADD COLUMN recale INTEGER NOT NULL DEFAULT 0');
-  }
+  // Colonnes ajoutées après coup. recale (T19) : 1 une fois le point recalé sur les rues.
+  // envoyee, envoye (T22) : 1 une fois la rue, ou le jour du passage, sauvegardé sur le compte.
+  ajouterColonne(base, 'points', 'recale');
+  ajouterColonne(base, 'rues_parcourues', 'envoyee');
+  ajouterColonne(base, 'passages', 'envoye');
   compte = { id, base };
   reprendreAnciennesDonnees(base, id);
+}
+
+function ajouterColonne(base: SQLite.SQLiteDatabase, table: string, colonne: string) {
+  const colonnes = base.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`, []);
+  if (!colonnes.some((c) => c.name === colonne)) {
+    base.execSync(`ALTER TABLE ${table} ADD COLUMN ${colonne} INTEGER NOT NULL DEFAULT 0`);
+  }
 }
 
 // Uniquement pour les tests : efface la base locale du compte, comme sur un téléphone neuf.

@@ -72,3 +72,13 @@ Ces clés ne vont jamais dans l'app ni dans `.env.local` : uniquement dans les s
 2. **Edge Functions**, **Deploy a new function**, **Via Editor**. Nom : `photo-profil` (exactement). Remplacer le code proposé par tout le contenu de `supabase/functions/photo-profil/index.ts`, puis **Deploy**.
 3. Laisser **Enforce JWT verification** (ou **Verify JWT**) activé : seule une session valide peut appeler la fonction. La fonction le revérifie elle-même.
 4. Dans l'app, Profil : toucher l'avatar, choisir une photo. Elle doit apparaître après quelques secondes. En cas d'erreur, l'onglet **Logs** de la fonction dit pourquoi.
+
+## 9. Rues à la place des positions (T22)
+
+Cette étape efface définitivement toutes les positions GPS déjà envoyées sur le serveur. À faire dans cet ordre, sans pause entre les deux :
+
+1. Ferme complètement l'app sur l'iPhone (balayer vers le haut). L'ancienne version ne doit pas tourner pendant la migration : elle échouerait sur la table des points disparue.
+2. **SQL Editor**, **New query** : coller tout `supabase/migrations/0003_rues.sql`, puis **Run**. Supabase prévient que la requête est destructive : c'est normal, confirmer.
+3. **Table Editor** : `rues_parcourues`, `passages_jours` et `stats_jours` existent, avec la mention RLS activée. La table `points` a disparu.
+4. Sur le PC, `npx expo start --clear`, puis rouvrir l'app sur l'iPhone. La première synchronisation envoie toutes tes rues déjà parcourues.
+5. Lancer `npm run test:rls` : chaque ligne doit commencer par OK, la dernière dire « Tout est bon. ».
