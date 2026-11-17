@@ -1,8 +1,8 @@
-import * as Haptics from 'expo-haptics';
 import { useEffect } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { Bouton } from '@/components/bouton';
+import { vibrerSucces } from '@/parametres/vibrer';
 import { couleurs, espace, polices, trait } from '@/theme';
 
 import type { Defi } from './defis';
@@ -17,7 +17,7 @@ type Props = {
 // Le timbre spécial du T24 viendra se poser ici.
 export function DefiTermine({ defi, encoreApres, onFermer }: Props) {
   useEffect(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    vibrerSucces();
   }, []);
   const Icone = defi.icone;
   return (

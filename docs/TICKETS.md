@@ -49,7 +49,7 @@ Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 n
 - [x] T29 Profil : username, bio, photo
 - [ ] T30 Les trois vues de l'accueil (après T20)
 - [ ] T31 Bug : position GPS bloquée sur « recherche en cours » dehors
-- [ ] T32 Paramètres
+- [x] T32 Paramètres
 - [ ] T33 Amis
 
 ---
@@ -532,7 +532,12 @@ Découpé en deux parties (choix d'Enzo). Partie 1, Compte et Confidentialité, 
 - Pause : rien n'est enregistré ni débloqué. Bandeau d'encre sur la carte, à toucher pour reprendre.
 - Export : un fichier JSON partagé avec la feuille de partage d'iOS (`expo-sharing`). Effacer l'historique : positions, rues, passages et kilomètres, sur le serveur puis le téléphone. Timbres, défis et pas gardés (choix d'Enzo).
 
-Partie 2 à faire : Suivi et batterie, Notifications (seulement « Nouveau timbre » en attendant le T28, choix d'Enzo), Affichage, Aide et mentions (signaler un bug à balade.paris.dev@gmail.com).
+Partie 2, faite :
+- Réglages du téléphone dans `src/parametres/options.ts`, base `reglages`, jamais synchronisés.
+- Suivi en arrière-plan : coupé, le suivi ne tourne que l'app ouverte (sans effet dans Expo Go, où c'est déjà le cas). Mode économie : une position tous les 30 m au lieu de 15, veille moins sensible, retour en veille après 2 minutes au lieu de 4. La précision reste la même, sinon les points seraient jetés (30 m). Synchroniser seulement en Wi-Fi (`expo-network`).
+- Notifications : seulement « Nouveau timbre » en attendant le T28 et le T33 (choix d'Enzo), plus un lien vers les réglages de l'iPhone.
+- Affichage : vibrations (toutes passent par `src/parametres/vibrer.ts`), reflet des timbres, réduire les animations. Ce dernier est imposé par le réglage d'accessibilité de l'iPhone s'il est actif : plus de loupe, de pivot, de reflet ni de tampon qui tombe, retournement instantané.
+- Aide et mentions : confidentialité, conditions et mentions légales marquées « À RÉDIGER », crédits OpenStreetMap (ODbL), police et icônes. Signaler un bug ouvre un e-mail prérempli vers balade.paris.dev@gmail.com, avec la version de l'app et d'iOS. Version affichée.
 
 ## T33 Amis
 

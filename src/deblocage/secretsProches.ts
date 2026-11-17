@@ -1,8 +1,9 @@
-import * as Haptics from 'expo-haptics';
 import { AppState } from 'react-native';
 
 import { distanceEntre, type Point } from '@/balade/mesures';
 import { lieuxPlaces } from '@/cartes/lieux';
+
+import { vibrerLeger } from '@/parametres/vibrer';
 
 import { secretsReveles } from './visibilite';
 
@@ -31,5 +32,5 @@ export function signalerSecretsProches(points: Point[], debloques: ReadonlySet<s
       vibrer = true;
     }
   }
-  if (vibrer) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  if (vibrer) vibrerLeger();
 }

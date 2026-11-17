@@ -3,6 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 
 import { distanceEntre } from '@/balade/mesures';
 import { ecrireReglage, lireReglage } from '@/db/reglages';
+import { option } from '@/parametres/options';
 
 import { traiterPositions } from './enregistrer';
 
@@ -21,6 +22,9 @@ const DEPART = 150; // mètres parcourus en veille qui font passer en marche
 const VITESSE_DEPART = 0.8; // m/s, un pas tranquille
 const BOUGE = 30; // mètres : en dessous, on considère qu'on est resté sur place
 const ARRET = 4 * 60 * 1000; // sur place depuis 4 minutes : retour en veille
+// Mode économie (T32) : la même précision, sinon les points seraient jetés, mais moins
+// de réveils. Veille moins sensible, retour en veille plus rapide.
+const ARRET_ECONOMIE = 2 * 60 * 1000;
 
 type Ancre = { latitude: number; longitude: number; t: number };
 
@@ -30,11 +34,12 @@ function options(regime: Regime): Location.LocationTaskOptions {
     pausesUpdatesAutomatically: false, // c'est nous qui décidons quand passer en veille
     showsBackgroundLocationIndicator: false,
   };
+  const economie = option('economie');
   return regime === 'marche'
     ? // Toutes les positions arrivent : c'est ce qui permet de voir qu'on s'est arrêté.
       // Le tri à 15 mètres est fait par traiterPositions.
-      { ...communes, accuracy: Location.Accuracy.High, distanceInterval: 0 }
-    : { ...communes, accuracy: Location.Accuracy.Balanced, distanceInterval: 100 };
+      { ...communes, accuracy: Location.Accuracy.High, distanceInterval: economie ? 10 : 0 }
+    : { ...communes, accuracy: Location.Accuracy.Balanced, distanceInterval: economie ? 200 : 100 };
 }
 
 function lireRegime(): Regime {
@@ -82,7 +87,7 @@ TaskManager.defineTask<{ locations: Location.LocationObject[] }>(TACHE_SUIVI, as
     }
   } else if (ecart > BOUGE) {
     poserAncre(); // on avance
-  } else if (derniere.timestamp - ancre.t > ARRET) {
+  } else if (derniere.timestamp - ancre.t > (option('economie') ? ARRET_ECONOMIE : ARRET)) {
     await passerEn('veille'); // sur place depuis un moment
   }
 });
@@ -97,6 +102,15 @@ export async function demarrerSuiviFond(): Promise<boolean> {
     await Location.startLocationUpdatesAsync(TACHE_SUIVI, options('marche'));
   }
   return true;
+}
+
+// Après un changement du mode économie : le suivi repart avec les nouveaux réglages.
+export async function relancerSuiviFond() {
+  try {
+    if (await Location.hasStartedLocationUpdatesAsync(TACHE_SUIVI)) await passerEn(lireRegime());
+  } catch {
+    // Pas de suivi en arrière-plan en cours.
+  }
 }
 
 export async function arreterSuiviFond() {

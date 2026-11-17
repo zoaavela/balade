@@ -12,28 +12,38 @@ import { ChangerEmail } from './ChangerEmail';
 import { changerConfidentialite, useConfidentialite, type Confidentialite } from './confidentialite';
 import { effacerHistorique, exporterDonnees } from './donnees';
 import { Feuille, GrandBouton, Ligne, LigneInterrupteur, Section, ZoneDanger } from './elements';
+import { PageAffichage, PageAide, PageNotifications, PageSuivi, PageTexteLegal, type PageTexte } from './PagesOptions';
 import { decrirePause, mettreEnPause, reprendreSuivi, usePause } from './pause';
 import { SupprimerCompte } from './SupprimerCompte';
 import { lireZones, ZONES_MAX } from './zones';
 import { ZonesPrivees } from './ZonesPrivees';
 
 // Les pages des paramètres. Chaque sous-page sait où revenir.
-type Vue = 'accueil' | 'compte' | 'confidentialite' | 'positions' | 'email' | 'appareils' | 'zones' | 'supprimer';
+type Vue =
+  | 'accueil' | 'compte' | 'confidentialite' | 'positions' | 'suivi' | 'notifications' | 'affichage' | 'aide'
+  | 'email' | 'appareils' | 'zones' | 'supprimer' | `texte-${PageTexte}`;
 
 const PARENT: Record<Vue, Vue | null> = {
   accueil: null,
   compte: 'accueil',
   confidentialite: 'accueil',
   positions: 'accueil',
+  suivi: 'accueil',
+  notifications: 'accueil',
+  affichage: 'accueil',
+  aide: 'accueil',
   email: 'compte',
   appareils: 'compte',
   supprimer: 'compte',
   zones: 'positions',
+  'texte-confidentialite': 'aide',
+  'texte-conditions': 'aide',
+  'texte-mentions': 'aide',
+  'texte-credits': 'aide',
 };
 
 // Écran des paramètres (T32), ouvert par l'icône réglages du profil. L'accueil montre
 // un grand bouton par section, et chaque section s'ouvre sur sa propre page.
-// Partie 1 : Compte, Confidentialité, Positions. Suivi, Notifications, Affichage et Aide ensuite.
 export function Parametres({ onFermer }: { onFermer: (profilChange: boolean) => void }) {
   const [vue, setVue] = useState<Vue>('accueil');
   const [profilChange, setProfilChange] = useState(false);
@@ -52,6 +62,13 @@ export function Parametres({ onFermer }: { onFermer: (profilChange: boolean) => 
       {vue === 'appareils' && <Appareils onRetour={retour} />}
       {vue === 'zones' && <ZonesPrivees onRetour={retour} />}
       {vue === 'supprimer' && <SupprimerCompte onRetour={retour} />}
+      {vue === 'suivi' && <PageSuivi onRetour={retour} />}
+      {vue === 'notifications' && <PageNotifications onRetour={retour} />}
+      {vue === 'affichage' && <PageAffichage onRetour={retour} />}
+      {vue === 'aide' && <PageAide onRetour={retour} ouvrir={(t) => setVue(`texte-${t}`)} />}
+      {vue.startsWith('texte-') && (
+        <PageTexteLegal page={vue.slice('texte-'.length) as PageTexte} onRetour={retour} />
+      )}
     </Modal>
   );
 }
@@ -74,6 +91,18 @@ function Accueil({ onFermer, ouvrir }: { onFermer: () => void; ouvrir: (v: Vue) 
           titre="Positions"
           detail="Zones privées, pause, tes données"
           onPress={() => ouvrir('positions')}
+        />
+        <GrandBouton
+          titre="Suivi et batterie"
+          detail="Arrière-plan, mode économie, Wi-Fi"
+          onPress={() => ouvrir('suivi')}
+        />
+        <GrandBouton titre="Notifications" detail="Ce qui te prévient" onPress={() => ouvrir('notifications')} />
+        <GrandBouton titre="Affichage" detail="Vibrations, reflet, animations" onPress={() => ouvrir('affichage')} />
+        <GrandBouton
+          titre="Aide et mentions"
+          detail="Textes, crédits, signaler un bug"
+          onPress={() => ouvrir('aide')}
         />
       </View>
     </Feuille>

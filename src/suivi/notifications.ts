@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 
 import type { Lieu } from '@/cartes/lieux';
+import { option } from '@/parametres/options';
 
 // Notifications locales uniquement, créées sur le téléphone : rien ne passe par un serveur.
 
@@ -25,6 +26,7 @@ export async function demanderNotifications() {
 }
 
 export async function notifierNouvelleCarte(lieu: Lieu) {
+  if (!option('notif_nouveau_timbre')) return; // coupé dans les paramètres
   try {
     await Notifications.scheduleNotificationAsync({
       content: { title: 'Nouveau timbre', body: `${lieu.nom} rejoint ta collection.` },

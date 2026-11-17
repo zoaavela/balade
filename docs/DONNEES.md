@@ -62,7 +62,7 @@ De même, la fonction `mes_sessions` (0004) liste les appareils connectés du co
 | etat | repères techniques (synchro) |
 | zones_privees | jusqu'à 3 cercles sans enregistrement, jamais synchronisée |
 
-Plus une base commune au téléphone, `reglages`, pour l'affichage et la pause du suivi.
+Plus une base commune au téléphone, `reglages`, pour l'affichage, les notifications, le suivi et sa pause.
 
 ## Fichiers
 

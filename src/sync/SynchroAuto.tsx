@@ -1,7 +1,9 @@
+import * as Network from 'expo-network';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { useDeblocage } from '@/deblocage/Deblocage';
+import { option } from '@/parametres/options';
 
 import { synchroniser } from './synchro';
 
@@ -16,6 +18,7 @@ export function SynchroAuto({ userId }: { userId: string }) {
     let actif = AppState.currentState === 'active';
     const lancer = async () => {
       if (!actif) return;
+      if (option('synchro_wifi') && !(await enWifi())) return; // réglage « seulement en Wi-Fi »
       if (await synchroniser(userId)) rafraichir();
     };
 
@@ -32,4 +35,13 @@ export function SynchroAuto({ userId }: { userId: string }) {
   }, [userId, rafraichir]);
 
   return null;
+}
+
+async function enWifi(): Promise<boolean> {
+  try {
+    const etat = await Network.getNetworkStateAsync();
+    return etat.type === Network.NetworkStateType.WIFI;
+  } catch {
+    return false;
+  }
 }

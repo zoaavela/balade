@@ -25,6 +25,7 @@ import { categories, type Categorie } from '@/cartes/categories';
 import { useInclinaison } from '@/cartes/inclinaison';
 import { numeroDe, type FormatTimbre, type Lieu } from '@/cartes/lieux';
 import { defis } from '@/defis/defis';
+import { useAnimationsReduites, useOptions } from '@/parametres/options';
 import { couleurs, polices } from '@/theme';
 
 type Props = {
@@ -77,12 +78,16 @@ export function Timbre({
   const { largeur, hauteur } = dimensionsTimbre(lieu.format, taille);
   const categorie = categories[lieu.categorie];
   const inclinaison = useInclinaison();
+  const { reflet } = useOptions();
+  const reduites = useAnimationsReduites();
+  const bouge = enGrand && !reduites; // pivot avec l'inclinaison
   const rotation = useSharedValue(0); // 0 : recto, 1 : verso
   const [auVerso, setAuVerso] = useState(false);
 
   function retourner() {
+    // Animations réduites : le timbre se retourne d'un coup.
     rotation.value = withTiming(auVerso ? 0 : 1, {
-      duration: DUREE_RETOURNEMENT,
+      duration: reduites ? 0 : DUREE_RETOURNEMENT,
       easing: Easing.inOut(Easing.cubic),
     });
     setAuVerso(!auVerso);
@@ -103,7 +108,7 @@ export function Timbre({
     ],
   }));
   const stylePivot = useAnimatedStyle(() => {
-    if (!enGrand || !inclinaison) return { transform: [] };
+    if (!bouge || !inclinaison) return { transform: [] };
     const y = Math.max(-1, Math.min(1, inclinaison.x.value * PIVOT_GAIN)) * PIVOT_MAX;
     const x = Math.max(-1, Math.min(1, inclinaison.y.value * PIVOT_GAIN)) * PIVOT_MAX;
     return {
@@ -118,9 +123,10 @@ export function Timbre({
       largeur={largeur}
       hauteur={hauteur}
       categorie={categorie}
-      reflet={enGrand}
+      reflet={enGrand && reflet && !reduites}
       debloqueLe={debloqueLe}
       obliterationAnimee={obliterationAnimee}
+      reduites={reduites}
       onOblitere={onOblitere}
     />
   );
@@ -223,6 +229,7 @@ function Recto({
   debloqueLe,
   obliterationAnimee,
   onOblitere,
+  reduites,
 }: {
   lieu: Lieu;
   largeur: number;
@@ -232,6 +239,7 @@ function Recto({
   debloqueLe?: Date;
   obliterationAnimee: boolean;
   onOblitere?: () => void;
+  reduites: boolean;
 }) {
   const { u, marge } = mesures(largeur, hauteur);
   const legendaire = lieu.categorie === 'legendaire';
@@ -272,6 +280,7 @@ function Recto({
           zone={lieu.zone}
           couleur={legendaire ? couleurs.or : couleurs.encre}
           animee={obliterationAnimee}
+          reduites={reduites}
           onOblitere={onOblitere}
         />
       )}
@@ -346,6 +355,7 @@ function Obliteration({
   zone,
   couleur,
   animee,
+  reduites,
   onOblitere,
 }: {
   largeur: number;
@@ -354,13 +364,19 @@ function Obliteration({
   zone: string;
   couleur: string;
   animee: boolean;
+  reduites: boolean;
   onOblitere?: () => void;
 }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const pose = useSharedValue(animee ? 0 : 1);
+  // Animations réduites : le tampon est déjà posé, seule la vibration marque le moment.
+  const pose = useSharedValue(animee && !reduites ? 0 : 1);
 
   useEffect(() => {
     if (!animee) return;
+    if (reduites) {
+      const minuteur = setTimeout(() => onOblitere?.(), DELAI_OBLITERATION);
+      return () => clearTimeout(minuteur);
+    }
     pose.value = withDelay(
       DELAI_OBLITERATION,
       withTiming(1, { duration: 170, easing: Easing.in(Easing.quad) }, (fini) => {

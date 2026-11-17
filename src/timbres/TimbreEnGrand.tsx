@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
@@ -11,6 +10,8 @@ import Animated, {
 
 import type { Lieu } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
+import { useAnimationsReduites } from '@/parametres/options';
+import { vibrerMoyen } from '@/parametres/vibrer';
 import { couleurs, espace, polices } from '@/theme';
 
 import { Timbre, tailleQuiTient } from './Timbre';
@@ -30,9 +31,11 @@ export function TimbreEnGrand({ lieu, debloqueLe, onFermer, titre, nouveau = fal
   const { width, height } = useWindowDimensions();
   const taille = tailleQuiTient(lieu.format, width - espace.xl * 2, height * 0.55);
 
-  const loupe = useSharedValue(0);
+  const reduites = useAnimationsReduites();
+  // Animations réduites : le timbre apparaît directement, sans effet de loupe.
+  const loupe = useSharedValue(reduites ? 1 : 0);
   useEffect(() => {
-    loupe.value = withSpring(1, { damping: 16, stiffness: 170, mass: 0.8 });
+    if (!reduites) loupe.value = withSpring(1, { damping: 16, stiffness: 170, mass: 0.8 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const style = useAnimatedStyle(() => ({
@@ -53,7 +56,7 @@ export function TimbreEnGrand({ lieu, debloqueLe, onFermer, titre, nouveau = fal
             retournable
             enGrand
             obliterationAnimee={nouveau}
-            onOblitere={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})}
+            onOblitere={vibrerMoyen}
           />
         </Animated.View>
         <Text style={styles.aide}>Touche le timbre pour le retourner.</Text>
