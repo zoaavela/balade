@@ -2,9 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { CarteEnGrand } from '@/album/CarteEnGrand';
 import { formaterDistance } from '@/balade/mesures';
-import { Carte } from '@/cartes/Carte';
 import { lieux, type Lieu } from '@/cartes/lieux';
 import { Ecran } from '@/components/ecran';
 import { Compte } from '@/compte/Compte';
@@ -14,16 +12,13 @@ import { defis, estTermine } from '@/defis/defis';
 import { formaterPas, lirePas, type Pas } from '@/pas/pas';
 import { EnteteProfil } from '@/profil/EnteteProfil';
 import { TestReseau } from '@/rues/TestReseau';
+import { Timbre } from '@/timbres/Timbre';
+import { TimbreEnGrand } from '@/timbres/TimbreEnGrand';
 import { couleurs, espace, polices, trait } from '@/theme';
 
-const NB_DERNIERES = 3;
+const NB_DERNIERS = 4;
 const ECART = 10;
-const TRANCHE = 4; // épaisseur du carton, dessinée en plus de la carte
-
-const MOIS_COURTS = [
-  'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
-];
+const PENTES = [-3, 2, -1.5, 3]; // degrés : posés un peu de travers, comme sur la maquette
 
 export default function Profil() {
   const { width } = useWindowDimensions();
@@ -41,11 +36,12 @@ export default function Profil() {
     }, []),
   );
 
-  const dernieres = lieux
+  const derniers = lieux
     .filter((lieu) => debloquees.has(lieu.id))
     .sort((a, b) => debloquees.get(b.id)!.getTime() - debloquees.get(a.id)!.getTime())
-    .slice(0, NB_DERNIERES);
-  const taille = Math.floor((width - espace.m * 2 - ECART * (NB_DERNIERES - 1)) / NB_DERNIERES) - TRANCHE;
+    .slice(0, NB_DERNIERS);
+  // Taille qui fait tenir quatre timbres au plus large format (grand) sur une ligne.
+  const taille = Math.min(80, Math.floor((width - espace.m * 2 - ECART * (NB_DERNIERS - 1)) / (NB_DERNIERS * 1.3)));
 
   return (
     <Ecran titre="Profil">
@@ -58,7 +54,7 @@ export default function Profil() {
         <EnteteProfil />
 
         <View style={styles.rangee}>
-          <Chiffre valeur={`${debloquees.size} / ${lieux.length}`} legende="Cartes" />
+          <Chiffre valeur={`${debloquees.size} / ${lieux.length}`} legende="Timbres" />
           <Chiffre
             valeur={`${defis.filter((d) => estTermine(d, debloquees)).length} / ${defis.length}`}
             legende="Défis"
@@ -78,22 +74,21 @@ export default function Profil() {
           </Text>
         )}
 
-        <Text style={styles.sousTitre}>Dernières cartes</Text>
-        {dernieres.length === 0 ? (
+        <Text style={styles.sousTitre}>Derniers timbres</Text>
+        {derniers.length === 0 ? (
           <Text style={styles.vide}>
-            Aucune carte pour l'instant. Passe près d'un lieu pour débloquer la première.
+            Aucun timbre pour l'instant. Passe près d'un lieu pour gagner le premier.
           </Text>
         ) : (
-          <View style={styles.cartes}>
-            {dernieres.map((lieu) => (
-              <View key={lieu.id} style={styles.carte}>
-                <Carte
+          <View style={styles.timbres}>
+            {derniers.map((lieu, i) => (
+              <View key={lieu.id} style={{ transform: [{ rotate: `${PENTES[i]}deg` }] }}>
+                <Timbre
                   lieu={lieu}
                   taille={taille}
                   debloqueLe={debloquees.get(lieu.id)}
                   onPress={() => setEnGrand(lieu)}
                 />
-                <Text style={styles.date}>{formaterDateCourte(debloquees.get(lieu.id)!)}</Text>
               </View>
             ))}
           </View>
@@ -106,7 +101,7 @@ export default function Profil() {
       </ScrollView>
 
       {enGrand && (
-        <CarteEnGrand
+        <TimbreEnGrand
           lieu={enGrand}
           debloqueLe={debloquees.get(enGrand.id)}
           onFermer={() => setEnGrand(null)}
@@ -129,11 +124,6 @@ function Chiffre(props: { valeur: string; legende: string; attente?: boolean }) 
       <Text style={styles.legende}>{props.legende}</Text>
     </View>
   );
-}
-
-// « 12 nov. »
-function formaterDateCourte(d: Date): string {
-  return `${d.getDate()} ${MOIS_COURTS[d.getMonth()]}`;
 }
 
 const styles = StyleSheet.create({
@@ -180,17 +170,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: couleurs.encreDouce,
   },
-  cartes: {
+  timbres: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: ECART,
-  },
-  carte: {
-    gap: espace.xs,
-    alignItems: 'center',
-  },
-  date: {
-    fontFamily: polices.moyen,
-    fontSize: 13,
-    color: couleurs.encreDouce,
+    paddingVertical: espace.xs,
   },
 });

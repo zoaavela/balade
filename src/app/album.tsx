@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { CarteEnGrand } from '@/album/CarteEnGrand';
-import { Carte, CarteCachee } from '@/cartes/Carte';
 import { categories, type CategorieId } from '@/cartes/categories';
 import { lieux, type Lieu } from '@/cartes/lieux';
 import { Ecran } from '@/components/ecran';
 import { useDeblocage } from '@/deblocage/Deblocage';
+import { Timbre, TimbreCache } from '@/timbres/Timbre';
+import { TimbreEnGrand } from '@/timbres/TimbreEnGrand';
 import { couleurs, espace, polices, trait } from '@/theme';
 
 const COLONNES = 3;
-const ECART = 10; // espace entre deux cartes de la grille
-const TRANCHE = 4; // épaisseur du carton, dessinée en plus de la carte
+const ECART = 10; // espace entre deux cases de la grille
 
 // Seules les catégories qui ont au moins un lieu apparaissent dans le filtre.
 const categoriesPresentes = (Object.keys(categories) as CategorieId[]).filter((id) =>
@@ -24,10 +23,12 @@ export default function Album() {
   const [filtre, setFiltre] = useState<CategorieId | null>(null);
   const [enGrand, setEnGrand] = useState<Lieu | null>(null);
 
-  // Le numéro d'une carte est sa place dans la liste : l'ordre est déjà le bon.
+  // Le numéro d'un timbre est sa place dans la liste : l'ordre est déjà le bon.
   const affiches = filtre ? lieux.filter((lieu) => lieu.categorie === filtre) : lieux;
   const nbDebloques = affiches.filter((lieu) => debloquees.has(lieu.id)).length;
-  const taille = Math.floor((width - espace.m * 2 - ECART * (COLONNES - 1)) / COLONNES) - TRANCHE;
+  // Grille provisoire en attendant le carnet du T25 : une case carrée par timbre,
+  // le timbre centré dedans à son format.
+  const cote = Math.floor((width - espace.m * 2 - ECART * (COLONNES - 1)) / COLONNES);
 
   return (
     <Ecran titre="Album">
@@ -54,23 +55,27 @@ export default function Album() {
       </View>
 
       <ScrollView contentContainerStyle={styles.grille} showsVerticalScrollIndicator={false}>
-        {affiches.map((lieu) =>
-          debloquees.has(lieu.id) ? (
-            <Carte
-              key={lieu.id}
-              lieu={lieu}
-              taille={taille}
-              debloqueLe={debloquees.get(lieu.id)}
-              onPress={() => setEnGrand(lieu)}
-            />
-          ) : (
-            <CarteCachee key={lieu.id} lieu={lieu} taille={taille} />
-          ),
-        )}
+        {affiches.map((lieu) => {
+          const taille = lieu.format === 'grand' ? cote / 1.3 : cote * 0.96;
+          return (
+            <View key={lieu.id} style={[styles.case, { width: cote, height: cote }]}>
+              {debloquees.has(lieu.id) ? (
+                <Timbre
+                  lieu={lieu}
+                  taille={taille}
+                  debloqueLe={debloquees.get(lieu.id)}
+                  onPress={() => setEnGrand(lieu)}
+                />
+              ) : (
+                <TimbreCache lieu={lieu} taille={taille} />
+              )}
+            </View>
+          );
+        })}
       </ScrollView>
 
       {enGrand && (
-        <CarteEnGrand
+        <TimbreEnGrand
           lieu={enGrand}
           debloqueLe={debloquees.get(enGrand.id)}
           onFermer={() => setEnGrand(null)}
@@ -134,6 +139,10 @@ const styles = StyleSheet.create({
   },
   pastilleTexteActif: {
     color: couleurs.fond,
+  },
+  case: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   grille: {
     flexDirection: 'row',

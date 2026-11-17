@@ -15,7 +15,7 @@ import MapView, { Polyline, type Region } from 'react-native-maps';
 import { marquerAccueilVu } from '@/accueil/accueilVu';
 import { supabase } from '@/compte/supabase';
 import { effacerBaseCompte } from '@/db/base';
-import { CarteEnGrand } from '@/album/CarteEnGrand';
+import { TimbreEnGrand } from '@/timbres/TimbreEnGrand';
 import { distanceEntre, formaterDistance, type Point } from '@/balade/mesures';
 import { MarqueurLieu } from '@/carte/MarqueurLieu';
 import { ZoneIndice } from '@/carte/ZoneIndice';
@@ -326,7 +326,7 @@ export default function Carte() {
       )}
 
       {choisi && debloquees.has(choisi.id) && (
-        <CarteEnGrand
+        <TimbreEnGrand
           lieu={choisi}
           debloqueLe={debloquees.get(choisi.id)}
           onFermer={() => setChoisi(null)}

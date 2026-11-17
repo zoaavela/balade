@@ -3,10 +3,10 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Carte } from '@/cartes/Carte';
 import { lieux } from '@/cartes/lieux';
 import { Bouton } from '@/components/bouton';
 import { FormulaireConnexion } from '@/compte/FormulaireConnexion';
+import { Timbre } from '@/timbres/Timbre';
 import { couleurs, espace, polices } from '@/theme';
 
 import { dansExpoGo } from '@/suivi/environnement';
@@ -24,8 +24,8 @@ const explications: Etape[] = [
   {
     titre: 'Tes trajets deviennent une collection',
     texte:
-      "Tu te déplaces en Île-de-France, l'app enregistre ton chemin. Passe près d'un lieu et tu débloques sa carte.",
-    visuel: <Carte lieu={lieux[0]} taille={190} />,
+      "Tu te déplaces en Île-de-France, l'app enregistre ton chemin. Passe près d'un lieu et tu gagnes son timbre.",
+    visuel: <Timbre lieu={lieux[0]} taille={210} debloqueLe={new Date()} />,
   },
   {
     titre: 'Le suivi est automatique',

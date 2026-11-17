@@ -17,8 +17,8 @@ import { surveillerLieux } from '@/suivi/zones';
 
 import { lieuxAtteints } from './lieuxAtteints';
 import { signalerSecretsProches } from './secretsProches';
-import { NouvelleCarte } from './NouvelleCarte';
 import { DefiTermine } from '@/defis/DefiTermine';
+import { TimbreEnGrand } from '@/timbres/TimbreEnGrand';
 import type { Defi } from '@/defis/defis';
 
 type Valeur = {
@@ -73,11 +73,13 @@ export function DeblocageProvider({ children }: { children: ReactNode }) {
     <Contexte.Provider value={{ debloquees, traiterPoint, rafraichir }}>
       {children}
       {enCours?.genre === 'carte' && (
-        <NouvelleCarte
+        <TimbreEnGrand
           key={enCours.lieu.id}
           lieu={enCours.lieu}
-          date={enCours.date}
-          encoreApres={aMontrer.length - 1}
+          debloqueLe={enCours.date}
+          titre="Nouveau timbre"
+          nouveau
+          titreBouton={aMontrer.length > 1 ? 'Suivant' : 'Fermer'}
           onFermer={() => setAMontrer((file) => file.slice(1))}
         />
       )}

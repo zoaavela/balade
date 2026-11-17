@@ -41,7 +41,7 @@ Phase D, rues et carte maison (marche dans Expo Go, à faire avant T08 au choix 
 Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 novembre 2026) :
 
 - [x] T23 Les 100 lieux
-- [ ] T24 Les timbres
+- [x] T24 Les timbres
 - [ ] T25 L'album en carnet de timbres
 - [ ] T26 Visibilité : visibles, indices, secrets, légendaires
 - [ ] T27 Les défis
@@ -346,6 +346,17 @@ Les timbres remplacent les cartes carrées.
 - Garder le vernis qui suit l'inclinaison si ça reste joli sur un timbre, sinon le retirer.
 
 Fini quand : les quatre formats s'affichent correctement, l'agrandissement et le retournement sont fluides.
+
+Fait :
+- `src/timbres/Timbre.tsx` : recto, verso, oblitération et emplacement vide. Proportions : portrait 0,78 × 1, paysage 1 × 0,78, carré 0,86 × 0,86, grand 1,3 × 1.
+- Aplat avec le nom en grand pour les 100 lieux, choix d'Enzo : les 20 SVG restent dans le dépôt sans être affichés. L'emplacement de la future photo est le composant `Illustration`.
+- Oblitération : zone du lieu en haut, jour et mois au centre, année en bas, trois lignes ondulées. Pour « Nouveau timbre », le tampon tombe après l'agrandissement, avec une vibration.
+- `src/timbres/TimbreEnGrand.tsx` : la loupe, utilisée par l'album, le profil, la carte et « Nouveau timbre ». Toucher le fond ferme.
+- Reflet gardé, plus discret, sur l'image du timbre en grand seulement.
+- Album : grille provisoire, une case par timbre, en attendant le carnet du T25. Profil : « Derniers timbres », les quatre derniers, un peu de travers.
+- Retirés : `Carte.tsx`, `CarteEnGrand.tsx`, `NouvelleCarte.tsx`, `illustrations.ts`.
+- Dents du papier : une forme percée de cercles (règle evenodd). Un masque SVG faisait planter Expo Go dès qu'un timbre s'ouvrait en grand, dans la vue retournée en 3D.
+- Pas fait ici : le timbre spécial des défis, plus tard (choix d'Enzo).
 
 ## T25 L'album en carnet de timbres
 

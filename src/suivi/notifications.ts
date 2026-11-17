@@ -4,7 +4,7 @@ import type { Lieu } from '@/cartes/lieux';
 
 // Notifications locales uniquement, créées sur le téléphone : rien ne passe par un serveur.
 
-// App ouverte : pas de bandeau, c'est l'écran « Nouvelle carte » qui s'affiche.
+// App ouverte : pas de bandeau, c'est l'écran « Nouveau timbre » qui s'affiche.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: false,
@@ -27,7 +27,7 @@ export async function demanderNotifications() {
 export async function notifierNouvelleCarte(lieu: Lieu) {
   try {
     await Notifications.scheduleNotificationAsync({
-      content: { title: 'Nouvelle carte', body: `${lieu.nom} rejoint ta collection.` },
+      content: { title: 'Nouveau timbre', body: `${lieu.nom} rejoint ta collection.` },
       trigger: null, // tout de suite
     });
   } catch {

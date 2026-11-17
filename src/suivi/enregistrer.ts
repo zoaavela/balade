@@ -89,7 +89,7 @@ export function traiterEntreeZone(lieuId: string) {
   if (lieu && !lieu.emplacement.contour) enregistrerDeblocages([lieu]);
 }
 
-// Écrit les déblocages, puis les montre : écran « Nouvelle carte » si l'app est ouverte,
+// Écrit les déblocages, puis les montre : écran « Nouveau timbre » si l'app est ouverte,
 // notification sinon. Renvoie les lieux vraiment nouveaux.
 export function enregistrerDeblocages(candidats: Lieu[]): Lieu[] {
   if (candidats.length === 0) return [];
