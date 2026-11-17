@@ -46,9 +46,11 @@ Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 n
 - [ ] T26 Visibilité : visibles, indices, secrets, légendaires
 - [ ] T27 Les défis
 - [ ] T28 Notifications des défis
-- [ ] T29 Profil : username, bio, photo
+- [x] T29 Profil : username, bio, photo
 - [ ] T30 Les trois vues de l'accueil (après T20)
 - [ ] T31 Bug : position GPS bloquée sur « recherche en cours » dehors
+- [ ] T32 Paramètres
+- [ ] T33 Amis
 
 ---
 
@@ -451,4 +453,68 @@ Fait :
 - `src/suivi/premierePosition.ts` : dernière position de moins de 10 minutes, sinon le flux continu et une demande ponctuelle en même temps, la première qui répond gagne. Limite de 15 secondes.
 - Au-delà : si la localisation est coupée, l'écran le dit. Sinon la carte s'affiche sur Paris avec un message, et se centre dès que la position arrive.
 - « Position exacte » coupée dans iOS : message dédié, car les points à 1 km près sont jetés.
+
+## T32 Paramètres
+
+Écran ouvert par l'icône réglages du profil. Sections, dans cet ordre. Avant de coder, lire docs/DONNEES.md.
+
+Compte
+- Modifier le profil (photo, username, bio), adresse e-mail (changement avec code de vérification).
+- Appareils connectés et « Se déconnecter partout » (révocation des sessions Supabase).
+- Se déconnecter.
+- Supprimer mon compte : confirmation en deux temps, suppression réelle côté serveur (fonction Supabase) de toutes les tables, de la photo R2 et du compte de connexion, puis effacement de la base du téléphone. Obligatoire pour l'App Store et le RGPD.
+
+Confidentialité
+- Qui peut voir mon profil : amis (par défaut) ou tout le monde.
+- Qui peut m'envoyer une demande d'ami : tout le monde (par défaut) ou seulement par lien ou QR code.
+- Apparaître dans la recherche par username : oui par défaut.
+- Ce que mes amis voient, un interrupteur chacun : timbres, défis, quartiers, kilomètres et pas. Tout activé par défaut.
+- Zones privées : jusqu'à 3 cercles (domicile, travail…) de 150 m par défaut, réglables. Aucune position n'y est enregistrée, ni recalée. Restent uniquement sur le téléphone, jamais synchronisées.
+- Mode pause du suivi : 1 heure, 1 journée, jusqu'à nouvel ordre. Indicateur visible sur la carte tant qu'il est actif.
+- Télécharger mes données (fichier JSON de tout ce qui concerne le compte) et effacer mon historique de déplacements.
+
+Suivi et batterie
+- Suivi en arrière-plan, mode économie, synchroniser seulement en Wi-Fi.
+
+Notifications
+- Un interrupteur par type : nouveau lieu, avancée de défi, défi terminé, lieu caché à proximité, demandes d'amis. Reprend les réglages du T28.
+
+Affichage
+- Vibrations, reflet des timbres, réduire les animations (activé automatiquement si le réglage d'accessibilité du téléphone l'est).
+
+Aide et mentions
+- Politique de confidentialité, conditions d'utilisation, mentions légales : écrans de texte, contenu provisoire marqué « à rédiger ».
+- Crédits, avec « © contributeurs OpenStreetMap » et la licence ODbL.
+- Signaler un bug (ouvre un e-mail prérempli), version de l'app.
+
+Règles :
+- Les réglages de confidentialité sont stockés sur le serveur (ils décident de ce que les autres peuvent lire) et appliqués par la base, pas seulement par l'app.
+- Les réglages d'affichage et les zones privées restent sur le téléphone.
+- Style : même DA que le profil, une liste par section avec titres en capitales espacées, traits d'encre entre les lignes.
+
+Fini quand : chaque réglage a un effet vérifiable, et la suppression de compte efface vraiment tout (vérifié dans Supabase et R2).
+
+## T33 Amis
+
+Avant de coder, lire docs/DONNEES.md. Dépend du T32 pour les réglages de confidentialité.
+
+Sur le profil, la section « Compte » est remplacée par « Amis » :
+- Demandes reçues en haut, avec Accepter et Refuser.
+- Liste des amis : photo, @username, nombre de timbres. Toucher ouvre le profil de l'ami.
+- Bouton « Ajouter ».
+
+Ajouter un ami, trois façons :
+- Par username exact (pas de recherche partielle, pour qu'on ne puisse pas parcourir la liste des inscrits). Respecte « Apparaître dans la recherche ».
+- Par QR code : chacun a le sien dans l'app, l'autre le scanne avec la caméra de l'app.
+- Par lien d'invitation, partageable par message. Jeton aléatoire, valable 7 jours, révocable.
+
+Règles :
+- Une demande doit être acceptée. Relation dans les deux sens.
+- Retirer un ami, bloquer (l'autre ne peut plus nous trouver ni nous écrire), signaler (enregistré pour modération, pas d'action automatique).
+- Maximum 20 demandes envoyées par jour, vérifié par la base.
+- Profil d'un ami : ses timbres, ses défis, ses quartiers, ses kilomètres et pas, et une comparaison avec soi, uniquement ce qu'il a choisi de montrer. Jamais de position, de tracé ni de passages.
+- Toutes ces règles sont appliquées par la sécurité au niveau des lignes et des fonctions de la base, jamais seulement par l'app.
+- Étendre `scripts/test-rls.mjs` : un inconnu ne lit rien, un ami ne lit que ce qui est autorisé, un compte bloqué ne voit rien, personne ne lit les positions d'un autre.
+
+Fini quand : Enzo ajoute un compte de test par les trois façons, voit son profil selon ses réglages, et les tests de sécurité passent tous.
 
