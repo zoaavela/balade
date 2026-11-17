@@ -81,6 +81,15 @@ export function utiliserCompte(id: string) {
       jour TEXT PRIMARY KEY, -- AAAA-MM-JJ, heure locale
       metres REAL NOT NULL
     );
+
+    -- Zones privées (T32) : aucune position n'y est enregistrée. Jamais synchronisée.
+    CREATE TABLE IF NOT EXISTS zones_privees (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nom TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      rayon_m REAL NOT NULL
+    );
   `);
   // Colonnes ajoutées après coup. recale (T19) : 1 une fois le point recalé sur les rues.
   // envoyee, envoye (T22) : 1 une fois la rue, ou le jour du passage, sauvegardé sur le compte.

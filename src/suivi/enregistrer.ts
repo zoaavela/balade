@@ -9,6 +9,8 @@ import { ajouterPoint, type PointDate } from '@/db/points';
 import { ecrireReglage, effacerReglage, lireReglage } from '@/db/reglages';
 import { lieuxAtteints } from '@/deblocage/lieuxAtteints';
 import { signalerSecretsProches } from '@/deblocage/secretsProches';
+import { enPause } from '@/parametres/pause';
+import { dansUneZone, lireZones } from '@/parametres/zones';
 import { recalerEnAttente } from '@/rues/recaler';
 
 import { defis, estTermine } from '@/defis/defis';
@@ -52,37 +54,47 @@ function dernierPoint(): Point | null {
 }
 
 export function traiterPositions(positions: LocationObject[]) {
+  if (enPause()) return; // mode pause (T32) : rien n'est enregistré ni débloqué
   if (!ouvrirCompteActif()) return;
 
+  const zones = lireZones();
   let precedent = dernierPoint();
   const nouveaux: PointDate[] = [];
+  // Points dans une zone privée : jamais enregistrés, seulement utilisés pour débloquer.
+  const prives: PointDate[] = [];
   for (const position of [...positions].sort((a, b) => a.timestamp - b.timestamp)) {
     const { latitude, longitude, accuracy } = position.coords;
     if (accuracy == null || accuracy > PRECISION_MAX) continue;
     const point = { latitude, longitude };
-    if (precedent && distanceEntre(precedent, point) < ECART_MIN) continue;
     const horodatage = Math.round(position.timestamp);
+    if (dansUneZone(point, zones)) {
+      prives.push({ latitude, longitude, horodatage });
+      continue;
+    }
+    if (precedent && distanceEntre(precedent, point) < ECART_MIN) continue;
     ajouterPoint({ latitude, longitude, precision_m: accuracy, horodatage });
     nouveaux.push({ latitude, longitude, horodatage });
     precedent = point;
   }
-  if (nouveaux.length === 0) return;
+  if (nouveaux.length === 0 && prives.length === 0) return;
 
-  annoncerPoints(nouveaux);
-  // Recalage sur les rues en tâche de fond : le déblocage, lui, utilise les points bruts.
-  recalerEnAttente().catch((err) => console.warn('Recalage impossible', err));
+  if (nouveaux.length > 0) {
+    annoncerPoints(nouveaux);
+    // Recalage sur les rues en tâche de fond : le déblocage, lui, utilise les points bruts.
+    recalerEnAttente().catch((err) => console.warn('Recalage impossible', err));
+  }
   const debloques = new Set(cartesDebloquees().keys());
   const atteints = new Map<string, Lieu>();
-  for (const point of nouveaux) {
+  for (const point of [...nouveaux, ...prives]) {
     for (const lieu of lieuxAtteints(point, debloques)) atteints.set(lieu.id, lieu);
   }
   enregistrerDeblocages([...atteints.values()]);
-  signalerSecretsProches(nouveaux, new Set(cartesDebloquees().keys()));
+  signalerSecretsProches([...nouveaux, ...prives], new Set(cartesDebloquees().keys()));
 }
 
 // Appelé quand iOS signale l'entrée dans la zone d'un lieu (voir zones.ts).
 export function traiterEntreeZone(lieuId: string) {
-  if (!ouvrirCompteActif()) return;
+  if (enPause() || !ouvrirCompteActif()) return;
   const lieu = lieuxPlaces.find((l) => l.id === lieuId);
   // Avec un contour réel, le cercle surveillé par iOS est plus large que le lieu :
   // c'est le suivi GPS qui débloquera, une fois vraiment dedans.

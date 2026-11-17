@@ -193,5 +193,39 @@ verifier(Boolean(profilVisiteur.error) || profilVisiteur.data.length === 0, 'Un 
 const verifBio = await A.client.from('profils').select('bio').eq('user_id', A.id).single();
 verifier(verifBio.data?.bio === bioA, 'Le profil de A est intact');
 
+// Confidentialité et appareils connectés (T32).
+const confA = await A.client
+  .from('confidentialite')
+  .upsert({ profil_public: true, montrer_stats: false }, { onConflict: 'user_id' })
+  .select();
+verifier(!confA.error && confA.data.length === 1, 'A enregistre ses réglages de confidentialité');
+
+const confVueParB = await B.client.from('confidentialite').select().eq('user_id', A.id);
+verifier(!confVueParB.error && confVueParB.data.length === 0, 'B ne voit pas les réglages de A');
+
+const confModifB = await B.client
+  .from('confidentialite')
+  .update({ profil_public: false })
+  .eq('user_id', A.id)
+  .select();
+verifier(!confModifB.error && confModifB.data.length === 0, 'B ne peut pas modifier les réglages de A');
+
+const confUsurpee = await B.client.from('confidentialite').insert({ user_id: A.id });
+verifier(Boolean(confUsurpee.error), 'B ne peut pas créer de réglages au nom de A');
+
+const confVisiteur = await visiteur.from('confidentialite').select();
+verifier(Boolean(confVisiteur.error) || confVisiteur.data.length === 0, 'Un visiteur sans compte ne voit aucun réglage');
+
+const sessionsA = await A.client.rpc('mes_sessions');
+verifier(!sessionsA.error && sessionsA.data.length >= 1, 'A voit ses appareils connectés');
+verifier(
+  !sessionsA.error && sessionsA.data.every((s) => !('ip' in s) && !('user_id' in s)),
+  "La liste des appareils ne donne ni l'adresse IP ni l'identifiant",
+);
+const sessionsVisiteur = await visiteur.rpc('mes_sessions');
+verifier(Boolean(sessionsVisiteur.error) || sessionsVisiteur.data.length === 0, 'Un visiteur sans compte ne voit aucun appareil');
+
+await A.client.from('confidentialite').update({ profil_public: false, montrer_stats: true }).eq('user_id', A.id);
+
 console.log(echecs === 0 ? '\nTout est bon.' : `\n${echecs} vérification(s) en échec.`);
 process.exit(echecs === 0 ? 0 : 1);

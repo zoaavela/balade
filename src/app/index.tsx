@@ -27,6 +27,7 @@ import { Ecran } from '@/components/ecran';
 import { joursAvecPassages, passagesDuJour } from '@/db/rues';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { affichageLieu, indiceTouche, secretsReveles, type Affichage } from '@/deblocage/visibilite';
+import { decrirePause, reprendreSuivi, usePause } from '@/parametres/pause';
 import { premierePosition } from '@/suivi/premierePosition';
 import { useSuiviPosition } from '@/suivi/useSuiviPosition';
 import { debutDuJour, nommerJour } from '@/trajets/jours';
@@ -52,6 +53,7 @@ export default function Carte() {
   const [etat, setEtat] = useState<Etat>({ type: 'verification' });
   const carteAffichee = useRef(false);
   const { debloquees } = useDeblocage();
+  const pause = usePause();
   const points = useSuiviPosition(etat.type === 'pret');
   const [menuSimulation, setMenuSimulation] = useState(false);
   const [choisi, setChoisi] = useState<LieuPlace | null>(null);
@@ -265,7 +267,20 @@ export default function Carte() {
             })}
           </MapView>
 
-          {(!etat.trouve || precisionReduite) && (
+          {/* Pause du suivi (T32) : visible tant qu'elle dure, prioritaire sur le message GPS. */}
+          {pause && (
+            <Pressable
+              style={[styles.bandeau, styles.bandeauPause]}
+              onPress={reprendreSuivi}
+              accessibilityRole="button"
+              accessibilityHint="Reprend le suivi">
+              <Text style={[styles.bandeauTexte, styles.bandeauPauseTexte]}>
+                {decrirePause(pause)} Touche ici pour reprendre.
+              </Text>
+            </Pressable>
+          )}
+
+          {!pause && (!etat.trouve || precisionReduite) && (
             <View style={styles.bandeau}>
               <Text style={styles.bandeauTexte}>
                 {precisionReduite
@@ -559,6 +574,12 @@ const styles = StyleSheet.create({
     borderColor: couleurs.encre,
     borderWidth: trait,
     borderRadius: 12,
+  },
+  bandeauPause: {
+    backgroundColor: couleurs.encre,
+  },
+  bandeauPauseTexte: {
+    color: couleurs.fond,
   },
   bandeauTexte: {
     fontFamily: polices.moyen,

@@ -82,3 +82,16 @@ Cette étape efface définitivement toutes les positions GPS déjà envoyées su
 3. **Table Editor** : `rues_parcourues`, `passages_jours` et `stats_jours` existent, avec la mention RLS activée. La table `points` a disparu.
 4. Sur le PC, `npx expo start --clear`, puis rouvrir l'app sur l'iPhone. La première synchronisation envoie toutes tes rues déjà parcourues.
 5. Lancer `npm run test:rls` : chaque ligne doit commencer par OK, la dernière dire « Tout est bon. ».
+
+## 10. Paramètres : confidentialité, appareils, suppression du compte (T32)
+
+1. **SQL Editor**, **New query** : coller tout `supabase/migrations/0004_parametres.sql`, puis **Run**.
+2. **Table Editor** : la table `confidentialite` existe, avec la mention RLS activée.
+3. **Authentication**, **Emails** (ou **Email Templates**), modèle **Change Email Address** : remplacer son contenu par
+   `<h2>Ton code</h2><p>{{ .Token }}</p><p>Il sert à changer l'adresse de ton compte Balade. Si tu n'as rien demandé, ignore ce message.</p>`
+   Sans ça, Supabase envoie un lien au lieu d'un code. Le même modèle part sur l'ancienne et la nouvelle adresse, chacune avec son propre code.
+4. **Authentication**, **Sign In / Providers** (ou **Providers**, **Email**) : vérifier que **Secure email change** est activé. C'est lui qui exige les deux codes.
+5. **Edge Functions**, **Deploy a new function**, **Via Editor**. Nom : `supprimer-compte` (exactement). Remplacer le code proposé par tout le contenu de `supabase/functions/supprimer-compte/index.ts`, puis **Deploy**. Laisser **Verify JWT** activé. Elle utilise les mêmes secrets R2 que `photo-profil` : rien à ajouter.
+6. Sur le PC, lancer `npm run test:rls` : toutes les lignes doivent dire OK, y compris celles sur la confidentialité et les appareils.
+
+À savoir : sans serveur d'envoi d'e-mails personnalisé, Supabase n'écrit qu'aux adresses des membres du projet, environ deux fois par heure. Pour tester le changement d'adresse, la nouvelle adresse doit donc être membre du projet (**Project Settings**, **Team**), ou il faudra brancher un serveur d'envoi plus tard.

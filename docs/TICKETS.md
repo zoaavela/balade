@@ -521,6 +521,19 @@ Règles :
 
 Fini quand : chaque réglage a un effet vérifiable, et la suppression de compte efface vraiment tout (vérifié dans Supabase et R2).
 
+Découpé en deux parties (choix d'Enzo). Partie 1, Compte et Confidentialité, faite :
+- Écran `src/parametres/Parametres.tsx`, ouvert par l'icône réglages du profil. Accueil en grands boutons, un par section, et une page par section (choix d'Enzo). Sous-écrans : adresse e-mail, appareils, zones privées, suppression du compte.
+- « Supprimer mon compte » seul dans une « Zone de danger » à cadre brique, en bas de la page Compte (choix d'Enzo).
+- Migration `supabase/migrations/0004_parametres.sql` : table `confidentialite` et fonction `mes_sessions`. Fonction `supabase/functions/supprimer-compte`. Mise en place : docs/SUPABASE.md, étape 10.
+- E-mail : un code sur l'ancienne adresse et un sur la nouvelle (« Secure email change » de Supabase).
+- Suppression : on explique, puis on tape SUPPRIMER. La fonction efface les photos R2 (profil et envois en attente) puis le compte, dont toutes les tables dépendent. Le téléphone efface ensuite sa base.
+- Réglages pour les amis enregistrés et protégés par la base. Ils n'ont pas encore d'effet visible : personne ne lit les données d'un autre avant le T33 (`profil_ami`).
+- Zones privées : posées à la position actuelle, 100, 150, 250 ou 400 m. Les points dedans ne sont ni enregistrés ni recalés, et ceux déjà enregistrés sont effacés. Un lieu s'y débloque quand même.
+- Pause : rien n'est enregistré ni débloqué. Bandeau d'encre sur la carte, à toucher pour reprendre.
+- Export : un fichier JSON partagé avec la feuille de partage d'iOS (`expo-sharing`). Effacer l'historique : positions, rues, passages et kilomètres, sur le serveur puis le téléphone. Timbres, défis et pas gardés (choix d'Enzo).
+
+Partie 2 à faire : Suivi et batterie, Notifications (seulement « Nouveau timbre » en attendant le T28, choix d'Enzo), Affichage, Aide et mentions (signaler un bug à balade.paris.dev@gmail.com).
+
 ## T33 Amis
 
 Avant de coder, lire docs/DONNEES.md. Dépend du T32 pour les réglages de confidentialité.

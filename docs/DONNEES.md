@@ -39,13 +39,15 @@ Toutes ont la sécurité au niveau des lignes activée.
 | rues_parcourues | user_id, segment_id, premiere_fois, derniere_fois, nb_passages | soi | soi | existe (0003) |
 | passages_jours | user_id, segment_id, jour | soi | soi | existe (0003), envoyé mais pas encore relu par l'app |
 | stats_jours | user_id, jour, metres, pas | soi ; totaux pour les amis si autorisé | soi | existe (0003) |
-| confidentialite | user_id, profil_public, demandes_ouvertes, dans_recherche, montrer_timbres, montrer_defis, montrer_quartiers, montrer_stats | soi | soi | T32 |
+| confidentialite | user_id, profil_public, demandes_ouvertes, dans_recherche, montrer_timbres, montrer_defis, montrer_quartiers, montrer_stats | soi | soi | existe (0004), appliquée par profil_ami au T33 |
 | amities | demandeur, destinataire, statut (en_attente, acceptee), cree_le, repondu_le | les deux concernés | demandeur (créer), destinataire (accepter, refuser), les deux (supprimer) | T33 |
 | blocages | bloqueur, bloque, cree_le | bloqueur | bloqueur | T33 |
 | invitations | user_id, jeton, expire_le, revoquee | soi | soi | T33 |
 | signalements | auteur, cible, motif, cree_le | personne côté app | auteur | T33 |
 
 Les données d'un ami ne sont jamais lues table par table depuis l'app : une fonction de la base (`profil_ami`) renvoie seulement ce que ses réglages autorisent, après avoir vérifié l'amitié et l'absence de blocage.
+
+De même, la fonction `mes_sessions` (0004) liste les appareils connectés du compte qui appelle, sans adresse IP.
 
 ## Téléphone : base SQLite par compte
 
@@ -58,9 +60,9 @@ Les données d'un ami ne sont jamais lues table par table depuis l'app : une fon
 | pas_jours | pas par jour |
 | cartes_debloquees | lieux débloqués |
 | etat | repères techniques (synchro) |
-| zones_privees | à créer au T32, jamais synchronisée |
+| zones_privees | jusqu'à 3 cercles sans enregistrement, jamais synchronisée |
 
-Plus une base commune au téléphone, `reglages`, pour l'affichage.
+Plus une base commune au téléphone, `reglages`, pour l'affichage et la pause du suivi.
 
 ## Fichiers
 
@@ -69,5 +71,4 @@ Plus une base commune au téléphone, `reglages`, pour l'affichage.
 
 ## Ce qui reste à faire, dans l'ordre
 
-1. T32 : table confidentialite, zones privées sur le téléphone, suppression de compte.
-2. T33 : amitiés, blocages, invitations, signalements, fonction profil_ami, tests de sécurité.
+1. T33 : amitiés, blocages, invitations, signalements, fonction profil_ami, tests de sécurité.

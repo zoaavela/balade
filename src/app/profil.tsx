@@ -1,6 +1,7 @@
+import IconSettings from '@tabler/icons-react-native/IconSettings';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { formaterDistance } from '@/balade/mesures';
 import { lieux, type Lieu } from '@/cartes/lieux';
@@ -10,6 +11,7 @@ import { distanceParcourue } from '@/db/rues';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { defis, estTermine } from '@/defis/defis';
 import { formaterPas, lirePas, type Pas } from '@/pas/pas';
+import { Parametres } from '@/parametres/Parametres';
 import { EnteteProfil } from '@/profil/EnteteProfil';
 import { TestReseau } from '@/rues/TestReseau';
 import { Timbre } from '@/timbres/Timbre';
@@ -27,6 +29,8 @@ export default function Profil() {
   // undefined : pas encore lu ; null : capteur indisponible ou refusé.
   const [pas, setPas] = useState<Pas | null | undefined>(undefined);
   const [enGrand, setEnGrand] = useState<Lieu | null>(null);
+  const [parametres, setParametres] = useState(false);
+  const [versionProfil, setVersionProfil] = useState(0); // relit l'en-tête après un changement
 
   // Recalculé à chaque ouverture de l'onglet, pour suivre les nouveaux points.
   useFocusEffect(
@@ -44,14 +48,24 @@ export default function Profil() {
   const taille = Math.min(80, Math.floor((width - espace.m * 2 - ECART * (NB_DERNIERS - 1)) / (NB_DERNIERS * 1.3)));
 
   return (
-    <Ecran titre="Profil">
+    <Ecran
+      titre="Profil"
+      droite={
+        <Pressable
+          onPress={() => setParametres(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Paramètres"
+          hitSlop={12}>
+          <IconSettings size={26} color={couleurs.encre} strokeWidth={2} />
+        </Pressable>
+      }>
       <ScrollView
         contentContainerStyle={styles.contenu}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets // le clavier ne cache pas le champ du compte
       >
-        <EnteteProfil />
+        <EnteteProfil key={versionProfil} />
 
         <View style={styles.rangee}>
           <Chiffre valeur={`${debloquees.size} / ${lieux.length}`} legende="Timbres" />
@@ -99,6 +113,15 @@ export default function Profil() {
 
         {__DEV__ && <TestReseau />}
       </ScrollView>
+
+      {parametres && (
+        <Parametres
+          onFermer={(change) => {
+            setParametres(false);
+            if (change) setVersionProfil((v) => v + 1);
+          }}
+        />
+      )}
 
       {enGrand && (
         <TimbreEnGrand

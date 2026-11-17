@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { ecrireReglage, lireReglage } from '@/db/reglages';
+import { ecrireReglage, lireReglage, effacerReglage } from '@/db/reglages';
 
 import { supabase } from './supabase';
 
@@ -101,6 +101,11 @@ function retenirUsername(u: string) {
 
 export function usernameRetenu(id: string): string | null {
   return lireReglage(cle(id));
+}
+
+// Après la suppression du compte : le téléphone ne garde rien de lui.
+export function oublierUsername(id: string) {
+  effacerReglage(cle(id));
 }
 
 // Pour les écrans : le profil, relu à la demande.
