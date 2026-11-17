@@ -42,7 +42,7 @@ Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 n
 
 - [x] T23 Les 100 lieux
 - [x] T24 Les timbres
-- [ ] T25 L'album en carnet de timbres
+- [x] T25 L'album en carnet de timbres
 - [ ] T26 Visibilité : visibles, indices, secrets, légendaires
 - [ ] T27 Les défis
 - [ ] T28 Notifications des défis
@@ -366,6 +366,14 @@ Fait :
 - Une page complète change d'aspect (bordure dorée ou équivalent sobre).
 
 Fini quand : l'album reflète exactement les lieux débloqués et se lit comme un carnet.
+
+Fait :
+- Pages dans `src/album/carnet.ts`, tirées des défis : rien de plus à enregistrer. Ordre des défis de docs/LIEUX.md, puis « Autres lieux » (les lieux d'aucun défi).
+- On tourne les pages en glissant, ou avec les flèches et « Page 3 sur 14 » (choix d'Enzo).
+- Secrets révélés : en bas de la page de leur défi, sous « À révéler en finissant ce défi », hors du compte (choix d'Enzo). Luxembourg et cimetière de Montmartre sont sur deux pages.
+- Filtre : chaque page ne garde que les timbres de la catégorie, une page vide disparaît, le total suit le filtre (choix d'Enzo). Le compte « 3 / 7 » d'une page reste celui de la page entière.
+- Page complète : bordure en or, deux fois plus épaisse, et « Page complète ».
+- Onglet Défis : toucher un défi ouvre l'album à sa page. `src/defis/PageDefi.tsx` retiré.
 
 ## T26 Visibilité
 

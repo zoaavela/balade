@@ -14,7 +14,7 @@ import IconTrain from '@tabler/icons-react-native/IconTrain';
 import IconTrees from '@tabler/icons-react-native/IconTrees';
 import IconWindmill from '@tabler/icons-react-native/IconWindmill';
 
-import { lieux, type Lieu } from '@/cartes/lieux';
+import { lieux } from '@/cartes/lieux';
 import { couleurs } from '@/theme';
 
 // Les 13 défis de docs/LIEUX.md (T27). Un défi est terminé quand tous ses lieux sont
@@ -77,10 +77,6 @@ export const defis: Defi[] = [
 
 export const defiParId = new Map(defis.map((d) => [d.id, d]));
 const lieuParId = new Map(lieux.map((l) => [l.id, l]));
-
-export function lieuxDuDefi(d: Defi): Lieu[] {
-  return d.lieux.map((id) => lieuParId.get(id)!);
-}
 
 export function avancement(d: Defi, debloquees: { has(id: string): boolean }): number {
   return d.lieux.filter((id) => debloquees.has(id)).length;

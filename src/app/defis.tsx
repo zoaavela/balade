@@ -1,18 +1,17 @@
-import { useMemo, useState } from 'react';
+import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Ecran } from '@/components/ecran';
 import { useDeblocage } from '@/deblocage/Deblocage';
 import { Barre, IconeDefi } from '@/defis/elements';
-import { PageDefi } from '@/defis/PageDefi';
 import { avancement, defis, estTermine, recompense, type Defi } from '@/defis/defis';
 import { couleurs, espace, polices } from '@/theme';
 
 // Onglet Défis (T27), d'après docs/maquettes/profil-defis.html : une ligne par défi
-// avec son icône, son avancement et sa barre. Toucher un défi ouvre sa page.
+// avec son icône, son avancement et sa barre. Toucher un défi ouvre sa page du carnet.
 export default function Defis() {
   const { debloquees } = useDeblocage();
-  const [ouvert, setOuvert] = useState<Defi | null>(null);
 
   // Terminés d'abord, puis les plus avancés.
   const tries = useMemo(() => {
@@ -21,8 +20,6 @@ export default function Defis() {
   }, [debloquees]);
   const nbTermines = defis.filter((d) => estTermine(d, debloquees)).length;
 
-  if (ouvert) return <PageDefi defi={ouvert} onRetour={() => setOuvert(null)} />;
-
   return (
     <Ecran titre="Défis">
       <Text style={styles.compteur}>
@@ -30,11 +27,16 @@ export default function Defis() {
       </Text>
       <ScrollView contentContainerStyle={styles.liste} showsVerticalScrollIndicator={false}>
         {tries.map((d) => (
-          <LigneDefi key={d.id} defi={d} fait={avancement(d, debloquees)} onPress={() => setOuvert(d)} />
+          <LigneDefi key={d.id} defi={d} fait={avancement(d, debloquees)} onPress={() => ouvrirPage(d)} />
         ))}
       </ScrollView>
     </Ecran>
   );
+}
+
+// Ouvre l'album à la page du défi. t change à chaque toucher, pour rouvrir la même page.
+function ouvrirPage(d: Defi) {
+  router.navigate({ pathname: '/album', params: { page: d.id, t: String(Date.now()) } });
 }
 
 function LigneDefi({ defi, fait, onPress }: { defi: Defi; fait: number; onPress: () => void }) {
