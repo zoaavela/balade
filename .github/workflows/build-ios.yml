@@ -1,11 +1,22 @@
-# Compile la build de développement iOS sur un Mac de GitHub, sans signature.
+# Compile l'app iOS sur un Mac de GitHub, sans signature.
 # Le fichier .ipa obtenu est signé ensuite sur l'iPhone par SideStore.
+# Deux versions au choix au lancement :
+# - developpement : charge le code depuis le PC (npx expo start), comme Expo Go ;
+# - autonome : tout le code est dans l'app, elle marche PC éteint.
 # Mode d'emploi complet : docs/BUILD.md
 
-name: Build iOS de développement
+name: Build iOS
 
 on:
   workflow_dispatch: # bouton « Run workflow » dans l'onglet Actions, rien d'automatique
+    inputs:
+      version:
+        description: 'Quelle build ?'
+        type: choice
+        options:
+          - autonome
+          - developpement
+        default: autonome
 
 permissions:
   contents: read
@@ -15,7 +26,23 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 60
 
+    env:
+      CONFIGURATION: ${{ inputs.version == 'autonome' && 'Release' || 'Debug' }}
+      NOM_IPA: ${{ inputs.version == 'autonome' && 'balade' || 'balade-dev' }}
+      # Adresse et clé PUBLIQUE de Supabase, lues dans les secrets GitHub et inscrites dans
+      # le code JavaScript pendant la compilation. Jamais de clé secrète ici.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+
     steps:
+      - name: Vérifier les secrets
+        if: inputs.version == 'autonome'
+        run: |
+          if [ -z "$EXPO_PUBLIC_SUPABASE_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "Il manque EXPO_PUBLIC_SUPABASE_URL ou EXPO_PUBLIC_SUPABASE_ANON_KEY dans les secrets GitHub (Settings, Secrets and variables, Actions)."
+            exit 1
+          fi
+
       - name: Récupérer le code
         uses: actions/checkout@v4
 
@@ -35,15 +62,17 @@ jobs:
         working-directory: ios
         run: pod install
 
-      - name: Compiler sans signature
+      # En Release, Xcode lance lui-même la mise en paquet du code JavaScript : il est
+      # inclus dans l'app, avec les deux variables publiques ci-dessus.
+      - name: Compiler sans signature (${{ inputs.version }})
         run: |
           ESPACE=$(ls -d ios/*.xcworkspace | head -n 1)
           SCHEMA=$(basename "$ESPACE" .xcworkspace)
-          echo "Projet : $ESPACE, schéma : $SCHEMA"
+          echo "Projet : $ESPACE, schéma : $SCHEMA, configuration : $CONFIGURATION"
           xcodebuild \
             -workspace "$ESPACE" \
             -scheme "$SCHEMA" \
-            -configuration Debug \
+            -configuration "$CONFIGURATION" \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
@@ -58,18 +87,28 @@ jobs:
               exit 1
             }
 
+      - name: Vérifier que le code JavaScript est inclus
+        if: inputs.version == 'autonome'
+        run: |
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -n 1)
+          if [ ! -f "$APP/main.jsbundle" ]; then
+            echo "main.jsbundle absent de $APP : l'app aurait besoin du PC."
+            exit 1
+          fi
+          ls -lh "$APP/main.jsbundle"
+
       - name: Fabriquer le fichier .ipa
         run: |
           mkdir Payload
-          cp -R build/Build/Products/Debug-iphoneos/*.app Payload/
-          zip -qry balade-dev.ipa Payload
-          ls -lh balade-dev.ipa
+          cp -R build/Build/Products/$CONFIGURATION-iphoneos/*.app Payload/
+          zip -qry "$NOM_IPA.ipa" Payload
+          ls -lh "$NOM_IPA.ipa"
 
       - name: Mettre le .ipa à disposition
         uses: actions/upload-artifact@v4
         with:
-          name: balade-dev-ipa
-          path: balade-dev.ipa
+          name: ${{ env.NOM_IPA }}-ipa
+          path: ${{ env.NOM_IPA }}.ipa
           retention-days: 14
 
       - name: Garder le journal en cas d'échec

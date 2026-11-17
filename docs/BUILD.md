@@ -1,22 +1,31 @@
-# Build de développement iOS
-
-La build de développement est notre propre version d'Expo Go : une vraie app installée sur l'iPhone, qui va chercher le code sur le PC pendant qu'on développe. Elle permet d'utiliser des modules qu'Expo Go ne contient pas, comme le suivi en arrière-plan.
+# Builds iOS
 
 Sans Mac, la chaîne est la suivante :
 
 1. GitHub compile l'app sur un de ses Mac et produit un fichier `.ipa` non signé.
 2. SideStore, installé sur l'iPhone, signe ce fichier avec ton identifiant Apple gratuit et l'installe.
-3. L'app se connecte au PC (`npx expo start`) par le Wi-Fi, comme Expo Go.
 
-On ne recompile que quand la partie native change : un nouveau module natif installé, ou un réglage modifié dans `app.json`. Pour une modification du code TypeScript, rien à faire, le PC envoie le nouveau code tout seul.
+## Quelle build choisir
+
+Il y a deux versions, au choix au moment de lancer la compilation.
+
+**Autonome** (`balade.ipa`) : tout le code est dans l'app. Elle marche PC éteint, partout. C'est celle de tous les jours. Elle ne change pas tant qu'on ne recompile pas : chaque nouveauté demande une nouvelle build et une réinstallation.
+
+**Développement** (`balade-dev.ipa`) : notre propre version d'Expo Go. Elle va chercher le code sur le PC (`npx expo start`), par le Wi-Fi. C'est celle pour coder et tester une nouveauté tout de suite. Sans le PC allumé, elle ne fait rien. On ne la recompile que quand la partie native change : un nouveau module natif installé, ou un réglage modifié dans `app.json`.
+
+Les deux ont le même identifiant : installer l'une remplace l'autre, et les données (rues, timbres, compte) restent. On passe donc de l'une à l'autre selon le moment : développement pendant une séance de code, autonome le reste du temps.
+
+La build autonome lit l'adresse Supabase et la clé publique dans les secrets GitHub (**Settings**, **Secrets and variables**, **Actions**) : `EXPO_PUBLIC_SUPABASE_URL` et `EXPO_PUBLIC_SUPABASE_ANON_KEY`, les mêmes valeurs que dans `.env.local`. Jamais la clé `service_role` ou `secret`. Si un secret manque, la compilation s'arrête tout de suite avec un message.
 
 ## 1. Compiler sur GitHub
 
 1. Ouvrir https://github.com/zoaavela/balade et aller dans l'onglet **Actions**.
-2. Dans la colonne de gauche, choisir **Build iOS de développement**.
-3. Cliquer sur **Run workflow** (à droite), garder la branche `main`, puis cliquer sur le bouton vert **Run workflow**.
+2. Dans la colonne de gauche, choisir **Build iOS**.
+3. Cliquer sur **Run workflow** (à droite), garder la branche `main`, choisir la version (**autonome** par défaut, ou **developpement**), puis cliquer sur le bouton vert **Run workflow**.
 4. Attendre environ 20 à 30 minutes. Une coche verte apparaît quand c'est fini, une croix rouge en cas d'échec.
-5. Cliquer sur l'exécution terminée. En bas de la page, dans **Artifacts**, télécharger **balade-dev-ipa**. GitHub le donne sous forme de `.zip`, qui contient `balade-dev.ipa`.
+5. Cliquer sur l'exécution terminée. En bas de la page, dans **Artifacts**, télécharger **balade-ipa** (autonome) ou **balade-dev-ipa** (développement). GitHub le donne sous forme de `.zip`, qui contient le fichier `.ipa`.
+
+GitHub compile ce qui est poussé sur `main`, pas ce qui est sur le PC sans être commité.
 
 En cas de croix rouge : le journal **journal-compilation** est disponible au même endroit. Me donner le lien de l'exécution.
 
@@ -39,14 +48,16 @@ Il faut : l'iPhone avec un code de déverrouillage, le PC Windows 64 bits, un c�
 ## 3. Installer l'app
 
 1. Télécharger le `.zip` de l'étape 1 sur l'iPhone (Safari, connecté à GitHub), ou le copier depuis le PC.
-2. Dans l'app Fichiers, toucher le `.zip` pour le décompresser : `balade-dev.ipa` apparaît.
+2. Dans l'app Fichiers, toucher le `.zip` pour le décompresser : le fichier `.ipa` apparaît.
 3. Allumer LocalDevVPN.
-4. Ouvrir SideStore, onglet **My Apps**, toucher **+** en haut à gauche, puis choisir `balade-dev.ipa`.
+4. Ouvrir SideStore, onglet **My Apps**, toucher **+** en haut à gauche, puis choisir le fichier `.ipa`.
 5. L'app apparaît sur l'écran d'accueil.
 
-Pour une nouvelle version, refaire la même chose : elle remplace l'ancienne et garde les données (tracé, cartes).
+Pour une nouvelle version, refaire la même chose : elle remplace l'ancienne et garde les données (rues, timbres, compte).
 
-## 4. Lancer l'app avec le PC
+## 4. Lancer la build de développement avec le PC
+
+Seulement pour la build de développement. L'autonome s'ouvre comme n'importe quelle app.
 
 1. Sur le PC, dans le dossier du projet : `npx expo start`. Le PC et l'iPhone doivent être sur le même Wi-Fi.
 2. Sur l'iPhone, ouvrir l'app. Elle demande l'accès au **réseau local** : accepter, sinon elle ne trouve pas le PC.

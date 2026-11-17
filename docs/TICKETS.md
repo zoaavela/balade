@@ -51,6 +51,14 @@ Phase E, interface et jeu (testable chez soi, priorité d'Enzo à partir du 16 n
 - [ ] T31 Bug : position GPS bloquée sur « recherche en cours » dehors
 - [x] T32 Paramètres
 - [ ] T33 Amis
+- [ ] T34 Logo et icône
+
+Phase F, utiliser l'app en vrai :
+
+- [ ] T35 Build autonome iOS (sans PC)
+- [ ] T36 APK Android pour les amis
+- [ ] T37 TestFlight (plus tard, compte Apple payant)
+- [ ] T38 Site web compagnon (après le MVP)
 
 ---
 
@@ -562,4 +570,71 @@ Règles :
 - Étendre `scripts/test-rls.mjs` : un inconnu ne lit rien, un ami ne lit que ce qui est autorisé, un compte bloqué ne voit rien, personne ne lit les positions d'un autre.
 
 Fini quand : Enzo ajoute un compte de test par les trois façons, voit son profil selon ses réglages, et les tests de sécurité passent tous.
+
+## T34 Logo et icône
+
+Fichiers fournis par Claude dans `assets/logo/`, validés par Enzo le 17 novembre 2026 (aperçu : `docs/maquettes/logo-apercu.png`) :
+- `icone.svg` et `icon.png` (1024 × 1024, carré plein sans transparence, iOS arrondit lui-même) : gros plan sur le coin oblitéré d'un timbre crème, fond brique.
+- `logo-reduit.*` et `logo-qr.*` : abandonnés, supprimés. Pas de logo dans le QR code pour l'instant.
+
+À faire :
+- Icône de l'app dans `app.json` (iOS et Android, icône adaptative Android avec fond brique #C65A3E).
+- Écran de démarrage : fond brique, icône centrée.
+- Retirer les anciennes icônes du modèle Expo dans `assets/`.
+
+Remarque : l'icône n'apparaît sur l'écran d'accueil qu'avec la build de développement (T08). Dans Expo Go, c'est l'icône d'Expo Go qui s'affiche.
+
+Fini quand : l'écran de démarrage et l'écran d'accueil de l'iPhone montrent le nouveau logo (le QR code reste sans logo, décision du 17 novembre 2026).
+
+Fait :
+- `app.json` : icône `assets/logo/icon.png` pour iOS, Android et le web. Android : icône adaptative sur fond brique.
+- Écran de démarrage : fond brique, icône aux coins arrondis centrée (`assets/logo/splash.png`, 160 points de large).
+- Anciennes icônes du modèle Expo supprimées (`assets/images/`, `assets/expo.icon`), ainsi que `logo-reduit.*` et `logo-qr.*`.
+
+---
+
+# Phase F : utiliser l'app en vrai
+
+Objectif : utiliser Balade au quotidien sans PC allumé, puis la faire tester à des amis.
+
+## T35 Build autonome iOS
+
+La build de développement (T08) charge le code depuis le PC. Celle-ci embarque tout le code : elle marche seule.
+- Ajouter au workflow GitHub `build-ios.yml` un choix « développement » ou « autonome » au lancement. La version autonome compile en configuration Release, code JavaScript inclus, `.ipa` non signé, installé avec SideStore comme décrit dans docs/BUILD.md.
+- Nom affiché « Balade », icône du T34.
+- Variables publiques (adresse Supabase, clé publique) injectées au moment de la build par les secrets GitHub, jamais écrites dans le dépôt. Jamais de clé secrète.
+- Mettre à jour docs/BUILD.md : quelle build choisir et quand.
+- Vérifier sur l'iPhone, PC éteint : connexion, carte, déblocage, album, profil, synchronisation.
+
+Fini quand : Enzo utilise l'app une journée entière avec le PC éteint.
+
+Fait :
+- `.github/workflows/build-ios.yml` : choix « autonome » (par défaut) ou « developpement » au lancement. L'autonome compile en Release : le code JavaScript est inclus (vérifié par le workflow), l'app ne cherche pas le PC. Fichier `balade.ipa`.
+- Secrets GitHub `EXPO_PUBLIC_SUPABASE_URL` et `EXPO_PUBLIC_SUPABASE_ANON_KEY`, inscrits dans le code au moment de la build. Le workflow s'arrête s'ils manquent.
+- Même identifiant d'app que la build de développement : installer l'une remplace l'autre et garde les données. Une seule place prise dans SideStore sur les trois.
+- docs/BUILD.md : quelle build choisir et quand.
+
+## T36 APK Android pour les amis
+
+- Workflow GitHub qui produit un `.apk` installable, sans Mac.
+- Mêmes règles de secrets que le T35.
+- Vérifier ce qui change sur Android : autorisations de localisation, pas via Health Connect, suivi en arrière-plan (notification permanente obligatoire sur Android).
+- Documenter dans docs/BUILD.md comment l'envoyer et l'installer (autoriser les sources inconnues).
+
+Fini quand : un ami Android installe l'app, se connecte et débloque un lieu.
+
+## T37 TestFlight
+
+À faire quand Enzo prend le compte Apple Developer (99 euros par an), après quelques semaines d'usage sans gros bug.
+- Builds signées et envoyées sur TestFlight sans Mac (EAS Build et EAS Submit, ou GitHub Actions avec les certificats en secrets).
+- Lien d'invitation pour les amis iPhone.
+- Mises à jour du code sans réinstaller (EAS Update).
+
+## T38 Site web compagnon
+
+Après le MVP. Pas une version web du jeu : le suivi en arrière-plan et le podomètre n'existent pas sur le web.
+- Page vitrine : ce qu'est Balade, QR code et liens d'installation.
+- Sur ordinateur ou tablette : connexion, puis album, profil et amis en lecture seule.
+- Sur téléphone sans l'app : invitation à l'installer.
+- Mêmes règles de sécurité que l'app : clé publique seulement, sécurité au niveau des lignes.
 
